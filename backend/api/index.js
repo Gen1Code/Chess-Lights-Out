@@ -1,20 +1,20 @@
-
-import dotenv from 'dotenv';
 import express from 'express';
-import { db } from '@vercel/postgres';
+import db from '../lib/database.js';
 
-dotenv.config();
-const app = express();
+const server = express();
 
-app.get("/", (req, res) => res.send("Express on Vercel"));
-app.get("/hello", (req, res) => res.send("Hello from API"));
-app.get("/test", (req, res) => res.send("Test"));
+server.get("/", (req, res) => res.send("Express on Vercel"));
 
-app.get("/testdb", async(req, res) => {
+server.get("/test", (req, res) => res.send("Test"));
+server.get("/testdb", async(req, res) => {
     const result = await db.query("SELECT * FROM users LIMIT 5");
     res.json(result.rows);
 });
 
-app.listen(3000, () => console.log("Server ready on port 3000."));
+// Define the port and start listening
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-export default app;
+export default server;
