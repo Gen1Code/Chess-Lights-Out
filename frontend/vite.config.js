@@ -5,4 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/Chess-Lights-Out/',
+  resolve: {
+    alias: {
+      '@components': '/src/components',
+      '@assets': '/src/assets',
+    },
+  },
+
 })
