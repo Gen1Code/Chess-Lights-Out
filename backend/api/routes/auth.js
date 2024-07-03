@@ -18,10 +18,13 @@ async function createUser(user_id, name){
     }
   }
 
-// TODO: Error handling, refactoring
+// TODO: Error handling, refactoring, proper name getting
 router.post('/', async (req, res) => {
+    if(req.userId) return res.send('Already Have a cookie');
+
     const userId = uuidv4();
     const name = req.body;
+    console.log(name);
     await createUser(userId,name);
 
     res.cookie("user_id", userId, {

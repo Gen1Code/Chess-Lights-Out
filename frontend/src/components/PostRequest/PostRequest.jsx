@@ -1,4 +1,5 @@
 import { useState } from "react";
+import config from "@config";
 
 export function PostRequest() {
   const [response, setResponse] = useState(null);
@@ -11,7 +12,7 @@ export function PostRequest() {
     };
 
     try {
-      const res = await fetch("https://chess-lights-out.vercel.app/auth/", {
+      const res = await fetch(config.apiBaseUrl+"/auth/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -20,7 +21,7 @@ export function PostRequest() {
         credentials: "include",
       });
 
-      const result = await res.json(); // Parse the JSON response
+      const result = await res.text(); // Parse the JSON response
       setResponse(result); // Update the state with the response
     } catch (error) {
       console.error("Error during fetch:", error);
@@ -32,7 +33,7 @@ export function PostRequest() {
       <form onSubmit={handleSubmit}>
         <button type="submit">Send POST Request</button>
       </form>
-      {response && <div>Response: {JSON.stringify(response)}</div>}
+      {response && <div>Response: {response}</div>}
     </div>
   );
 }

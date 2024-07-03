@@ -1,26 +1,16 @@
-import express from 'express';
-import router from './routes/root.js';
-import cookieParser from 'cookie-parser';
-import userCookieMiddleware from './middleware/cookies.js';
-import cors from 'cors';
+import express from "express";
+import router from "./routes/root.js";
+import cookieParser from "cookie-parser";
+import userCookieMiddleware from "./middleware/cookies.js";
+import getCorsConfig from './middleware/cors.js'; 
 
 const server = express();
 
 // Middleware
-server.use(cors({
-  origin: 'https://gen1code.github.io',
-  credentials: true
-}));
-
-if (process.env.NODE_ENV !== 'production') {
-  server.use(cors({
-    origin:  ['http://localhost:3000', 'http://127.0.0.1:3000'],
-    credentials: true
-  }));
-}
+server.use(getCorsConfig());
 
 server.use((req, res, next) => {
-  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header("Access-Control-Allow-Credentials", "true");
   next();
 });
 
@@ -28,7 +18,9 @@ server.use(cookieParser());
 server.use(userCookieMiddleware);
 
 //Status check
-server.get("/", (req, res) => { res.send("Express"); });
+server.get("/", (req, res) => {
+  res.send("Express");
+});
 
 // Use Router
 server.use(router);
