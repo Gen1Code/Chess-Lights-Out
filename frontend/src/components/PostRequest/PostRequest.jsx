@@ -5,7 +5,7 @@ export function PostRequest() {
   const [response, setResponse] = useState(null);
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent the default form submit action
+    e.preventDefault();
 
     const postData = {
       name: "exampleUser"

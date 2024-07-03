@@ -30,7 +30,8 @@ router.post('/', async (req, res) => {
     res.cookie("user_id", userId, {
       maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
       httpOnly: true,
-      secure: true
+      secure: true,
+      sameSite: 'none'
     });
 
     res.send('Data response');
