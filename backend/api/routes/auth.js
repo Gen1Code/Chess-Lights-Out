@@ -20,7 +20,7 @@ async function createUser(user_id, name){
 
 // TODO: Error handling, refactoring, proper name getting
 router.post('/', async (req, res) => {
-    if(req.userId) return res.send('Already Have a cookie');
+    if(req.cookies.user_id) return res.send('Already Have a cookie');
 
     const userId = uuidv4();
     const name = req.body;
