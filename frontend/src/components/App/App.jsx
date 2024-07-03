@@ -17,7 +17,7 @@ export function App() {
     const move = makeAMove({
       from: sourceSquare,
       to: targetSquare,
-      promotion: "q", // always promote to a queen for example simplicity
+      promotion: "q", // always promote to a queen for simplicity
     });
 
     // illegal move

@@ -1,8 +1,15 @@
 import express from 'express';
 import router from './routes/root.js';
+import cookieParser from 'cookie-parser';
+import userCookieMiddleware from './middleware/cookies.js';
 
 const server = express();
 
+// Middleware
+server.use(cookieParser());
+server.use(userCookieMiddleware);
+
+//
 server.get("/", (req, res) => { res.send("Express"); });
 
 // Use Router
