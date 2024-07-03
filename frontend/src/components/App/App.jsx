@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import reactLogo from '@assets/react.svg';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import './App.css';
+import { PostRequest } from '@components/PostRequest';
 
 export function App() {
   const [game, setGame] = useState(new Chess());
@@ -31,6 +31,7 @@ export function App() {
       <Chessboard position={game.fen()} onPieceDrop={onDrop} />
       <div className="card">
       </div>
+      <PostRequest />
     </>
   );
 }
