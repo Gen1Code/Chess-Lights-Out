@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import './App.css';
-import { PostRequest } from '@components/PostRequest';
+import { ApiRequest } from '@components/ApiRequest';
 
 export function App() {
   const [game, setGame] = useState(new Chess());
@@ -31,7 +31,9 @@ export function App() {
       <Chessboard position={game.fen()} onPieceDrop={onDrop} />
       <div className="card">
       </div>
-      <PostRequest />
+      <ApiRequest method="POST" path="/auth/" postData={null}/>
+      <ApiRequest method="GET" path="/game/play" postData={null}/>
+
     </>
   );
 }

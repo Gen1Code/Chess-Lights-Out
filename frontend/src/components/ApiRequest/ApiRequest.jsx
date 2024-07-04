@@ -1,7 +1,7 @@
 import { useState } from "react";
 import config from "@config";
 
-export function PostRequest() {
+export function ApiRequest({method, path, postData}) {
   const [response, setResponse] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -12,12 +12,13 @@ export function PostRequest() {
     };
 
     try {
-      const res = await fetch(config.apiBaseUrl+"/auth/", {
-        method: "POST",
+      const res = await fetch(config.apiBaseUrl+path, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(postData), // Convert the data to JSON string
+        //set body if method is POST
+        body: method === "POST" ? JSON.stringify(postData) : null,
         credentials: "include",
       });
 
@@ -31,7 +32,8 @@ export function PostRequest() {
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        <button type="submit">Send POST Request</button>
+        <h3>API {method} Request</h3>
+        <button type="submit">Send API Request</button>
       </form>
       {response && <div>Response: {response}</div>}
     </div>
