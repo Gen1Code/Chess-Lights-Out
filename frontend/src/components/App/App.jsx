@@ -31,7 +31,7 @@ export function App() {
       <Chessboard position={game.fen()} onPieceDrop={onDrop} />
       <div className="card">
       </div>
-      <ApiRequest method="POST" path="/auth/" postData={null}/>
+      <ApiRequest method="POST" path="/auth/" postData={{ name: "examplePlayer" }}/>
       <ApiRequest method="GET" path="/game/play" postData={null}/>
 
     </>

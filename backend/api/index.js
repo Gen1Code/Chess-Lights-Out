@@ -2,7 +2,7 @@ import express from "express";
 import router from "./routes/root.js";
 import cookieParser from "cookie-parser";
 import userCookieMiddleware from "./middleware/cookies.js";
-import getCorsConfig from './middleware/cors.js'; 
+import getCorsConfig from "./middleware/cors.js";
 
 const server = express();
 
@@ -19,7 +19,7 @@ server.use(userCookieMiddleware);
 
 //Status check
 server.get("/", (req, res) => {
-  res.send("Express");
+  res.json({ message: "Express" });
 });
 
 // Use Router

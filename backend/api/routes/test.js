@@ -4,7 +4,7 @@ import db from '../lib/database.js';
 const router = express.Router();
 
 router.get('/server', (req, res) => {
-    res.send("Test")
+    res.json({ message: "Test" })
 });
   
 router.get('/db', async (req, res) => {

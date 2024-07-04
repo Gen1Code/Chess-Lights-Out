@@ -7,23 +7,27 @@ export function ApiRequest({method, path, postData}) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const postData = {
-      name: "exampleUser"
-    };
+    let user_id = localStorage.getItem("user_id");
 
     try {
       const res = await fetch(config.apiBaseUrl+path, {
         method: method,
         headers: {
           "Content-Type": "application/json",
+          "Authorization": user_id ? "Bearer " + user_id : ""
         },
         //set body if method is POST
         body: method === "POST" ? JSON.stringify(postData) : null,
         credentials: "include",
       });
 
-      const result = await res.text(); // Parse the JSON response
+      const result = await res.json(); // Parse the JSON response
       setResponse(result); // Update the state with the response
+
+      if(path === "/auth/"){
+        localStorage.setItem("user_id", result.user_id);
+      }
+
     } catch (error) {
       console.error("Error during fetch:", error);
     }
@@ -35,7 +39,7 @@ export function ApiRequest({method, path, postData}) {
         <h3>API {method} Request</h3>
         <button type="submit">Send API Request</button>
       </form>
-      {response && <div>Response: {response}</div>}
+      {response && <div>Response: {JSON.stringify(response)}</div>}
     </div>
   );
 }
