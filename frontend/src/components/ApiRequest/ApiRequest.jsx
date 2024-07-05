@@ -24,7 +24,7 @@ export function ApiRequest({method, path, postData}) {
       const result = await res.json(); // Parse the JSON response
       setResponse(result); // Update the state with the response
 
-      if(path === "/auth/"){
+      if(path === "/auth/" && result.user_id){
         localStorage.setItem("user_id", result.user_id);
       }
 
