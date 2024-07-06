@@ -12,8 +12,27 @@
 .card {
     position: absolute;
     display: block;
-    /*put card in center relative to container and not the page*/
-    top: 10%;
-    left: 30%;
+    
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
     z-index: 1;
+}
+
+.close-button {
+    position: absolute;
+    top: 10%;
+    right: 10%;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+}
+
+.close-button:hover {
+    color: #ff0000; /* Optional: Change color on hover */
 }

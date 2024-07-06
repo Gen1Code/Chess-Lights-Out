@@ -18,6 +18,8 @@ function gameOverMessage(game) {
     return "Stalemate!";
   } else if (game.isThreefoldRepetition()) {
     return "Threefold Repetition!";
+  } else if (game.isDraw()) {
+    return "50 Move Rule!";
   }else{
     console.error("Game over but no reason found");
     return "Game Over!";
