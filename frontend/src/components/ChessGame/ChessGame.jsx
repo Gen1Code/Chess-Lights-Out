@@ -6,11 +6,11 @@ import { ApiRequest } from "@components/ApiRequest";
 function getRandomMove(game) {
   let possibleMoves = game.moves();
   return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-}
+}  
 
 export function ChessGame({ mode = "single", playerColor = "" }) {
   const [game, setGame] = useState(new Chess());
-  const [orientation, _] = useState(
+  const [orientation, setOrientation] = useState(
     mode === "single" ? (Math.random() > 0.5 ? "white" : "black") : playerColor
   );
 
@@ -19,26 +19,41 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
 
   function makeAMove(move) {
     const gameCopy = new Chess(game.fen());
-    const result = gameCopy.move(move);
+    try {
+      gameCopy.move(move);
+    } catch (e) {
+      console.error("Invalid move", move);
+      return;
+    }
     setGame(gameCopy);
-    return result;
   }
 
   function onDrop(sourceSquare, targetSquare) {
-    if (turn !== orientation || isGameOver) return false;
-    const move = makeAMove({
+    if (turn !== orientation || isGameOver) return;
+    makeAMove({
       from: sourceSquare,
       to: targetSquare,
       promotion: "q", // always promote to a queen for simplicity
     });
+  }
 
-    // illegal move
-    if (move === null) return false;
-    return true;
+  function resetGame() {
+    setGame(new Chess());
+    setOrientation(Math.random() > 0.5 ? "white" : "black");
   }
 
   useEffect(() => {
-    console.log("Turn is", turn);
+    if (isGameOver) {
+      console.log("Game over");
+      //Sleep for 10 seconds before resetting the game
+      setTimeout(() => {
+        resetGame();
+      }, 2000);
+    }
+  }, [isGameOver]);
+
+  useEffect(() => {
+    // if it's the computer's turn, make a move
     if (mode === "single" && turn !== orientation && !isGameOver) {
       const move = getRandomMove(game);
       makeAMove(move);
@@ -51,6 +66,8 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
         position={game.fen()}
         onPieceDrop={onDrop}
         boardOrientation={orientation}
+        isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
+        arePiecesDraggable={!isGameOver}
       />
     </>
   );
