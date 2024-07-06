@@ -18,11 +18,11 @@ export function ApiRequest({method, path, postData}) {
         },
         //set body if method is POST
         body: method === "POST" ? JSON.stringify(postData) : null,
-        credentials: "include",
+        credentials: "include"
       });
 
-      const result = await res.json(); // Parse the JSON response
-      setResponse(result); // Update the state with the response
+      const result = await res.json(); 
+      setResponse(result); 
 
       if(path === "/auth/" && result.user_id){
         localStorage.setItem("user_id", result.user_id);
