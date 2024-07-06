@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
+import { getBotMove } from "@utils/BasicChessBot";
 import "./ChessGame.css";
 
 function getRandomMove(game) {
@@ -71,8 +72,10 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
   useEffect(() => {
     // if it's the computer's turn, make a move
     if (mode === "single" && turn !== orientation && !isGameOver) {
-      const move = getRandomMove(game);
-      makeAMove(move);
+      (async () => {
+        const move = await getBotMove(game);
+        makeAMove(move);
+      })();
     }
   }, [turn, isGameOver]);
 
