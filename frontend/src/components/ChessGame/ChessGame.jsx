@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
-import { ApiRequest } from "@components/ApiRequest";
+import { GameOverCard } from "@components/GameOverCard";
+import "./ChessGame.css";
 
 function getRandomMove(game) {
   let possibleMoves = game.moves();
@@ -37,18 +38,14 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
     });
   }
 
-  function resetGame() {
-    setGame(new Chess());
+  async function resetGame() {
     setOrientation(Math.random() > 0.5 ? "white" : "black");
+    setGame(new Chess());
   }
 
   useEffect(() => {
     if (isGameOver) {
-      console.log("Game over");
-      //Sleep for 10 seconds before resetting the game
-      setTimeout(() => {
-        resetGame();
-      }, 2000);
+      console.log("Game over");    
     }
   }, [isGameOver]);
 
@@ -58,17 +55,18 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
       const move = getRandomMove(game);
       makeAMove(move);
     }
-  }, [turn]);
+  }, [turn, isGameOver]);
 
   return (
-    <>
-      <Chessboard
+    <div className="chessboard">
+      <Chessboard className="board"
         position={game.fen()}
         onPieceDrop={onDrop}
         boardOrientation={orientation}
         isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
         arePiecesDraggable={!isGameOver}
       />
-    </>
+      <GameOverCard message={"Game Over"} onClickReset={resetGame} isGameOver={isGameOver}/>
+    </div>
   );
 }

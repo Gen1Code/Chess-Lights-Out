@@ -1,0 +1,19 @@
+.chessboard {
+    position: relative;
+    display: grid;
+    border: 1px solid #fff;
+    grid-template-areas: 'overlay';
+}
+
+.board {
+    grid-area: overlay;
+}
+
+.card {
+    position: absolute;
+    display: block;
+    /*put card in center relative to container and not the page*/
+    top: 10%;
+    left: 30%;
+    z-index: 1;
+}

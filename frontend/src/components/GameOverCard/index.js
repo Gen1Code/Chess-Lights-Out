@@ -1,0 +1,1 @@
+export { GameOverCard } from './GameOverCard';
