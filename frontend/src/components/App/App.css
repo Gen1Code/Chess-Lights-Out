@@ -3,4 +3,16 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  min-width: 50%;
+}
+
+.settingsbox {
+  align-self: flex-start;     /* Align the settingsbox to the top of the row */
+
+}
+
+.chessbox .settingsbox {
+  max-width: 100%;            /* Limit to the width of the gamebox */
+  max-height: 100%;           /* Limit to the height of the gamebox */
+  aspect-ratio: 1;            /* Maintain square aspect ratio */
 }

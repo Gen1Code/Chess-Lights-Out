@@ -251,7 +251,7 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
 }
 
 function getBestMove(game, color, currSum) {
-  var depth = 3;
+  var depth = 2;
   var [bestMove, bestMoveValue] = minimax(
     game,
     depth,

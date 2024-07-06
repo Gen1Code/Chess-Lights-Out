@@ -3,12 +3,14 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
 import { getBotMove } from "@utils/BasicChessBot";
+import { ChessSettings } from "@components/ChessSettings";
+
 import "./ChessGame.css";
 
 function getRandomMove(game) {
   let possibleMoves = game.moves();
   return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-}  
+}
 
 function gameOverMessage(game) {
   if (game.isCheckmate()) {
@@ -21,16 +23,16 @@ function gameOverMessage(game) {
     return "Threefold Repetition!";
   } else if (game.isDraw()) {
     return "50 Move Rule!";
-  }else{
+  } else {
     console.error("Game over but no reason found");
     return "Game Over!";
   }
 }
 
-export function ChessGame({ mode = "single", playerColor = "" }) {
+export function ChessGame({ settings }) {
   const [game, setGame] = useState(new Chess());
   const [orientation, setOrientation] = useState(
-    mode === "single" ? (Math.random() > 0.5 ? "white" : "black") : playerColor
+    settings.mode === "single" ? (Math.random() > 0.5 ? "white" : "black") : settings.playerColor
   );
   const [statusMessage, setStatusMessage] = useState("");
 
@@ -71,7 +73,7 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
 
   useEffect(() => {
     // if it's the computer's turn, make a move
-    if (mode === "single" && turn !== orientation && !isGameOver) {
+    if (settings.mode === "single" && turn !== orientation && !isGameOver) {
       (async () => {
         const move = await getBotMove(game);
         makeAMove(move);
@@ -81,14 +83,20 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
 
   return (
     <div className="chessboard">
-      <Chessboard className="board"
+      <Chessboard
+        className="board"
         position={game.fen()}
         onPieceDrop={onDrop}
         boardOrientation={orientation}
         isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
         arePiecesDraggable={!isGameOver}
       />
-      <GameOverCard message={statusMessage} onClickReset={resetGame} isGameOver={isGameOver}/>
+      <GameOverCard
+        className="card"
+        message={statusMessage}
+        onClickReset={resetGame}
+        isGameOver={isGameOver}
+      />
     </div>
   );
 }

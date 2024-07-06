@@ -1,0 +1,1 @@
+export { ChessSettings } from './ChessSettings';
