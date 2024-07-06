@@ -9,11 +9,27 @@ function getRandomMove(game) {
   return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
 }  
 
+function gameOverMessage(game) {
+  if (game.isCheckmate()) {
+    return "Checkmate!";
+  } else if (game.isInsufficientMaterial()) {
+    return "Insufficient Material!";
+  } else if (game.isStalemate()) {
+    return "Stalemate!";
+  } else if (game.isThreefoldRepetition()) {
+    return "Threefold Repetition!";
+  }else{
+    console.error("Game over but no reason found");
+    return "Game Over!";
+  }
+}
+
 export function ChessGame({ mode = "single", playerColor = "" }) {
   const [game, setGame] = useState(new Chess());
   const [orientation, setOrientation] = useState(
     mode === "single" ? (Math.random() > 0.5 ? "white" : "black") : playerColor
   );
+  const [statusMessage, setStatusMessage] = useState("");
 
   const turn = game.turn() === "w" ? "white" : "black";
   const isGameOver = game.isGameOver();
@@ -23,7 +39,7 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
     try {
       gameCopy.move(move);
     } catch (e) {
-      console.error("Invalid move", move);
+      console.log("Invalid move", move);
       return;
     }
     setGame(gameCopy);
@@ -38,14 +54,15 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
     });
   }
 
-  async function resetGame() {
+  function resetGame() {
     setOrientation(Math.random() > 0.5 ? "white" : "black");
     setGame(new Chess());
   }
 
   useEffect(() => {
     if (isGameOver) {
-      console.log("Game over");    
+      console.log("Game over");
+      setStatusMessage(gameOverMessage(game));
     }
   }, [isGameOver]);
 
@@ -66,7 +83,7 @@ export function ChessGame({ mode = "single", playerColor = "" }) {
         isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
         arePiecesDraggable={!isGameOver}
       />
-      <GameOverCard message={"Game Over"} onClickReset={resetGame} isGameOver={isGameOver}/>
+      <GameOverCard message={statusMessage} onClickReset={resetGame} isGameOver={isGameOver}/>
     </div>
   );
 }
