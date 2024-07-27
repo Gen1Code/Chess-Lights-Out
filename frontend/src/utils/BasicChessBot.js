@@ -277,13 +277,25 @@ function makeBestMove(game, color) {
   return move;
 }
 
+// export function getBotMove(game) {
+//   return new Promise((resolve) => {
+//     setTimeout(() => {
+//       let gameCopy = new Chess(game.fen());
+//       let bMove = makeBestMove(gameCopy, gameCopy.turn());
+//       console.log("Bot move: ", bMove);
+//       resolve(bMove);
+//     }, 500);
+//   });
+// }
+
 export function getBotMove(game) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      let gameCopy = new Chess(game.fen());
-      let bMove = makeBestMove(gameCopy, gameCopy.turn());
-      console.log("Bot move: ", bMove);
-      resolve(bMove);
-    }, 500);
-  });
+  let gameCopy = new Chess(game.fen());
+  let bMove = makeBestMove(gameCopy, gameCopy.turn());
+  console.log("Bot move: ", bMove);
+  return bMove;
+}
+
+export function getRandomMove(game) {
+  let possibleMoves = game.moves();
+  return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
 }

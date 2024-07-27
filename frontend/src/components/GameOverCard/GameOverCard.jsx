@@ -1,18 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { GameContext } from "@context/GameContext";
 import "./GameOverCard.css";
 
-export function GameOverCard({ message, onClickReset, isGameOver }) {
-  const [isVisible, setIsVisible] = useState(isGameOver);
+export function GameOverCard({ message }) {
+  const { status, setStatus } = useContext(GameContext);
+  const [isVisible, setIsVisible] = useState(false);
 
   function handleClose() {
     setIsVisible(false);
   }
 
-  useEffect(() => {
-    setIsVisible(isGameOver);
-  }, [isGameOver]);
+  function resetGame() {
+    setStatus("Playing");
+  }
 
-  if (!isVisible) {
+  useEffect(() => {
+    setIsVisible(status !== "Playing");
+  }, [status]);
+
+  if (!isVisible || status === "Haven't started yet") {
     return null;
   }
 
@@ -25,7 +31,7 @@ export function GameOverCard({ message, onClickReset, isGameOver }) {
         Game Over<br></br>
         {message}
       </h3>
-      <button onClick={onClickReset}>Reset</button>
+      <button onClick={resetGame}>Play Again</button>
     </div>
   );
 }

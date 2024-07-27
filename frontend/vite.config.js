@@ -11,6 +11,7 @@ export default defineConfig({
       '@assets': '/src/assets',
       '@config': '/src/config.js',
       '@utils': '/src/utils',
+      '@context': '/src/context'
     },
   },
 

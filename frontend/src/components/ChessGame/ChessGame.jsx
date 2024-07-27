@@ -1,16 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { GameContext } from "@context/GameContext";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
 import { getBotMove } from "@utils/BasicChessBot";
-import { ChessSettings } from "@components/ChessSettings";
 
 import "./ChessGame.css";
 
-function getRandomMove(game) {
-  let possibleMoves = game.moves();
-  return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-}
 
 function gameOverMessage(game) {
   if (game.isCheckmate()) {
@@ -29,14 +25,15 @@ function gameOverMessage(game) {
   }
 }
 
-export function ChessGame({ settings }) {
+export function ChessGame() {
+  const { settings, status, setStatus } = useContext(GameContext);
   const [game, setGame] = useState(new Chess());
   const [orientation, setOrientation] = useState(
     settings.mode === "single" ? (Math.random() > 0.5 ? "white" : "black") : settings.playerColor
   );
-  const [statusMessage, setStatusMessage] = useState("");
 
   const turn = game.turn() === "w" ? "white" : "black";
+  const playing = status === "Playing";
   const isGameOver = game.isGameOver();
 
   function makeAMove(move) {
@@ -51,7 +48,7 @@ export function ChessGame({ settings }) {
   }
 
   function onDrop(sourceSquare, targetSquare) {
-    if (turn !== orientation || isGameOver) return;
+    if (turn !== orientation || isGameOver || !playing) return;
     makeAMove({
       from: sourceSquare,
       to: targetSquare,
@@ -59,31 +56,59 @@ export function ChessGame({ settings }) {
     });
   }
 
-  function resetGame() {
-    setOrientation(Math.random() > 0.5 ? "white" : "black");
-    setGame(new Chess());
+  function forcegame(){
+    let fen = "k7/6Q1/3N4/8/3b3q/8/8/5K2 ";
+    if(orientation === "white"){
+      fen+="w"
+    }else {
+      fen+="b";
+    }
+    fen+=" - - 0 1";
+    setGame(new Chess(fen));
   }
 
+  function botMove(g = game) { 
+    console.log("botMove triggered with:", orientation, turn);
+    if(playing && settings.mode === "single"){
+      const move = getBotMove(g);
+      let gameCopy = new Chess(g.fen());
+      gameCopy.move(move);
+      setGame(gameCopy);
+    }
+  }
+
+  // On Turn Change
+  useEffect(() => {
+    console.log("useEffect triggered with turn:", turn);
+    // if it's the computer's turn, make a move
+    if (turn !== orientation && settings.mode === "single") {
+      botMove();
+    }
+  }, [turn]);
+
+  // On Game Over
   useEffect(() => {
     if (isGameOver) {
       console.log("Game over");
-      setStatusMessage(gameOverMessage(game));
+      setStatus(gameOverMessage(game));
     }
-  }, [isGameOver]);
+  }, [isGameOver]);    
 
+  // On Game Start
   useEffect(() => {
-    // if it's the computer's turn, make a move
-    if (settings.mode === "single" && turn !== orientation && !isGameOver) {
-      (async () => {
-        const move = await getBotMove(game);
-        makeAMove(move);
-      })();
+    if (status === "Playing") {
+      console.log("Game started");
+      const newOrientation = settings.mode === "single" ? (Math.random() > 0.5 ? "white" : "black") : settings.playerColor
+      const newGame = new Chess();
+      setOrientation(newOrientation);    
+      setGame(newGame);
+      
+      // if it's the computer's turn first, trigger a move
+      if (newOrientation === "black" && settings.mode === "single") {
+        botMove(newGame);
+      }
     }
-  }, [turn, isGameOver]);
-
-  useEffect(() => {
-    console.log("Settings changed", settings);
-  }, [settings]);
+  }, [status]);
 
   return (
     <div className="chessboard">
@@ -95,12 +120,14 @@ export function ChessGame({ settings }) {
         isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
         arePiecesDraggable={!isGameOver}
       />
+      {playing === false && <div className="mist-overlay"></div>}
       <GameOverCard
         className="card"
-        message={statusMessage}
-        onClickReset={resetGame}
-        isGameOver={isGameOver}
+        message={status}
       />
+      {process.env.NODE_ENV === 'development' && (
+        <button onClick={forcegame} >Force Game</button>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ const server = express();
 server.use(getCorsConfig());
 
 server.use((req, res, next) => {
+  
   res.header("Access-Control-Allow-Credentials", "true");
   next();
 });
