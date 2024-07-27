@@ -2,25 +2,33 @@ import React from 'react';
 
 export function ChessSettings({ settings, onChangeSettings }) {
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    onChangeSettings((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    onChangeSettings((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    //console.log("Settings changed", name, type === 'checkbox' ? checked : value);
   };
 
   return (
     <div>
       <h3>Chess Settings</h3>
       <label>
-        Mode:
+        Mode:&nbsp;
         <select name="mode" onChange={handleChange}>
           <option value="single">Single Player</option>
           <option value="multi">Multiplayer</option>
         </select>
       </label>
+      <a> </a>
       <label>
-        Player Color:
-        <select name="playerColor" onChange={handleChange}>
-          <option value="white">White</option>
-          <option value="black">Black</option>
+        Lights Out:&nbsp;
+        <input type="checkbox" name="lightsOut" checked={settings.lightsOut} onChange={handleChange} />
+      </label>
+      <a> </a>
+      <label>
+        Maze:&nbsp;
+        <select name="maze" onChange={handleChange}>
+          <option value="off">Off</option>
+          <option value="static">Static</option>
+          <option value="shift">Shift</option>
         </select>
       </label>
     </div>

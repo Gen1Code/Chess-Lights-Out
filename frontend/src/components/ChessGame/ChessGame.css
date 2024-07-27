@@ -2,7 +2,7 @@
     position: relative;
     display: grid;
     border: 1px solid #fff;
-    grid-template-areas: 'overlay';
+    grid-template-areas: 'overlay';    
 }
 
 .board {

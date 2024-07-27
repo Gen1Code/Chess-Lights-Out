@@ -2,10 +2,11 @@ import { useState } from "react";
 import { ChessGame } from "@components/ChessGame";
 import { ChessSettings } from "@components/ChessSettings";
 import { ApiRequest } from "@components/ApiRequest";
+import { PlayButton } from "@components/PlayButton";
 import "./App.css";
 
 export function App() {
-  const [settings, setSettings] = useState({ mode: "single", playerColor: "" });
+  const [settings, setSettings] = useState({ mode: "single", lightsOut: false, maze: "off" });
 
   return (
     <>
@@ -15,6 +16,8 @@ export function App() {
         <div className="settingsbox">
           <ChessSettings settings={settings} onChangeSettings={setSettings} />
         </div>
+        <br />
+        <PlayButton settings={settings} />
       </div>
       <ApiRequest
         method="POST"

@@ -81,6 +81,10 @@ export function ChessGame({ settings }) {
     }
   }, [turn, isGameOver]);
 
+  useEffect(() => {
+    console.log("Settings changed", settings);
+  }, [settings]);
+
   return (
     <div className="chessboard">
       <Chessboard
