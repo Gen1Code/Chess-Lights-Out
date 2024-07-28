@@ -38,8 +38,6 @@ function pawnSquareInFront(pawnSquare, color){
 }
     
 
-//Get squares to be lit up, for legal moves, your own pieces squares
-//pins?
 function getLitupSquares(game, orientation) {
   console.log("getLitupSquares triggered");
 
@@ -53,16 +51,16 @@ function getLitupSquares(game, orientation) {
   
   board.forEach((row, i) => {
     row.forEach((piece, j) => {
-      //If it's your own piece, light it up
       if (piece && piece.color === orientation[0]) {
         let square = SQUARES[8 * i + j];
+        //If it's your own piece, light it up
         squares.add(square);
         if(piece.type === "k"){
-          console.log("Your king is at", square);
           //if it's your king, light up all the squares around it even non possible moves
           let surroundingSquares = kingSurroundingSquares(square);
           squares = squares.union(surroundingSquares);
         }else if(piece.type === "p"){
+          // if it's your pawn, light up the square in front of it
           let squaresInFront = pawnSquareInFront(square, piece.color);
           squares = squares.union(squaresInFront);
         }
@@ -91,6 +89,21 @@ function gameOverMessage(game) {
   }
 }
 
+function findKing(game, color) {
+  let kingSquare = null;
+  const board = game.board();
+  console.log("findKing triggered with color:", color);
+  console.log("board", board);
+  board.forEach((row, i) => {
+    row.forEach((piece, j) => {
+      if (piece && piece.type === "k" && piece.color === color) {
+        kingSquare = SQUARES[8 * i + j];
+      }
+    });
+  });
+  return kingSquare;
+}
+
 export function ChessGame() {
   const { currentSettings, status, setStatus } = useContext(GameContext);
   const singlePlayer = currentSettings.mode === "single";
@@ -100,8 +113,12 @@ export function ChessGame() {
     singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
   );
 
+  const [squareStyles, setSquareStyles] = useState({});
+  const [checkStyle, setCheckStyle] = useState({});
+
   const turn = game.turn() === "w" ? "white" : "black";
   const playing = status === "Playing";
+  const inCheck = game.inCheck() && turn === orientation;
   const isGameOver = game.isGameOver();
 
   function makeAMove(move) {
@@ -139,10 +156,39 @@ export function ChessGame() {
     // console.log("botMove triggered with:", orientation, turn);
     if(playing && singlePlayer){
       const move = getBotMove(g);
+      if (!move) return;
       let gameCopy = new Chess(g.fen());
       gameCopy.move(move);
       setGame(gameCopy);
     }
+  }
+
+  function styleSquares(litupSquares) {
+    console.log("styleSquares triggered");
+
+    if(currentSettings.lightsOut === false || playing === false){
+      setSquareStyles({});
+      return;
+    }
+
+    let allSquares = new Set(SQUARES);
+
+    litupSquares.forEach((square) => {
+      allSquares.delete(square);
+    });
+
+    let styles = {};
+    allSquares.forEach((square) => {
+      styles[square] = { 
+        //Make only child element invisible
+        contentVisibility: "hidden",
+        backgroundColor: "rgb(0, 0, 0)",        
+       };
+    });
+
+
+    console.log("styles", styles);
+    setSquareStyles(styles);
   }
 
   // On Turn Change
@@ -152,15 +198,30 @@ export function ChessGame() {
     if (currentSettings.lightsOut && playing) {
       console.log(getLitupSquares(game, orientation));
       const litupSquares = getLitupSquares(game, orientation);
+      styleSquares(litupSquares);
       console.log("Litup squares:", litupSquares);
     }
 
 
     // if it's the computer's turn, make a move
-    if (turn !== orientation && singlePlayer) {
+    if (turn !== orientation && singlePlayer && playing) {
       botMove();
     }
+
   }, [turn]);
+
+  // if king is in check, style the square
+  useEffect(() => {
+    console.log("useEffect triggered with inCheck:", inCheck);
+    let styles = {};
+
+    if (inCheck) {
+      const kingSquare = findKing(game, orientation[0]);
+      styles[kingSquare] = { backgroundColor: "rgba(255,0,0,0.25)" };
+    }
+    console.log("checkStyle", styles);
+    setCheckStyle(styles);
+  }, [inCheck]);
 
   // On Game Over
   useEffect(() => {
@@ -178,11 +239,14 @@ export function ChessGame() {
       const newGame = new Chess();
       setOrientation(newOrientation);    
       setGame(newGame);
+      styleSquares(getLitupSquares(newGame, newOrientation));
       
       // if it's the computer's turn first, trigger a move
       if (newOrientation === "black" && singlePlayer) {
         botMove(newGame);
       }
+    }else{
+      setSquareStyles({});
     }
   }, [status]);
 
@@ -195,6 +259,7 @@ export function ChessGame() {
         boardOrientation={orientation}
         isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
         arePiecesDraggable={!isGameOver}
+        customSquareStyles={{...squareStyles, ...checkStyle}}
       />
       {playing === false && <div className="mist-overlay"></div>}
       <GameOverCard
