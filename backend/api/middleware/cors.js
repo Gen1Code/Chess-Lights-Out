@@ -3,6 +3,7 @@ import cors from 'cors';
 const corsOptions = {
   production: {
     origin: "https://gen1code.github.io",
+    optionsSuccessStatus: 200,
     credentials: true,
   },
   development: {
