@@ -2,7 +2,7 @@ import React, { useState, useContext} from 'react';
 import { GameContext } from '@context/GameContext';
 import { api } from '@utils/api';
 export function PlayButton() {
-    const {settings, setCurrentSettings, status, setStatus } = useContext(GameContext);
+    const {settings, currentSettings, setCurrentSettings, status, setStatus } = useContext(GameContext);
     const [response, setResponse] = useState(null);
     
     const playing = status === "Playing";
@@ -17,10 +17,10 @@ export function PlayButton() {
     }
 
     function resign() {
-        if (settings.mode === "single") {
+        if (currentSettings.mode === "single") {
             setStatus("You resigned!");
         }else{
-            api("/game/resign", "POST", settings, setResponse)
+            api("/game/resign", "POST", setResponse)
         }
     }
 

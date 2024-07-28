@@ -2,10 +2,10 @@ import React, {useContext} from 'react';
 import { GameContext } from '@context/GameContext';
 
 export function ChessSettings() {
-  const { settings, onChangeSettings } = useContext(GameContext);
+  const { settings, setSettings } = useContext(GameContext);
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    onChangeSettings((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    setSettings((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     //console.log("Settings changed", name, type === 'checkbox' ? checked : value);
   };
 

@@ -1,11 +1,77 @@
 import { useEffect, useState, useContext } from "react";
 import { GameContext } from "@context/GameContext";
-import { Chess } from "chess.js";
+import { Chess, SQUARES } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
 import { getBotMove } from "@utils/BasicChessBot";
 
 import "./ChessGame.css";
+
+function kingSurroundingSquares(kingSquare){
+  let squares = new Set();
+  let [file, rank] = kingSquare.split("");
+  let fileIndex = "abcdefgh".indexOf(file);
+  let rankIndex = "12345678".indexOf(rank);
+  for(let i = -1; i <= 1; i++){
+    for(let j = -1; j <= 1; j++){
+      let newFileIndex = fileIndex + i;
+      let newRankIndex = rankIndex + j;
+      if(newFileIndex >= 0 && newFileIndex <= 7 && newRankIndex >= 0 && newRankIndex <= 7){
+        squares.add("abcdefgh"[newFileIndex] + "12345678"[newRankIndex]);
+      }
+    }
+  }
+  return squares;
+}
+
+function pawnSquareInFront(pawnSquare, color){
+  let squares = new Set();
+  //if it's your pawn, light up the squares in front of it
+  let [file, rank] = pawnSquare.split("");
+  let rankIndex = "12345678".indexOf(rank);
+  let direction = color === "w" ? 1 : -1;
+  let newRankIndex = rankIndex + direction;
+  if(newRankIndex >= 0 && newRankIndex <= 7){
+    squares.add(file + "12345678"[newRankIndex]);
+  }
+    return squares;
+}
+    
+
+//Get squares to be lit up, for legal moves, your own pieces squares
+//pins?
+function getLitupSquares(game, orientation) {
+  console.log("getLitupSquares triggered");
+
+  const moves = game.moves({ verbose: true });
+  let squares = new Set();
+  moves.forEach((move) => {
+    squares.add(move.to);
+  });
+
+  const board = game.board();
+  
+  board.forEach((row, i) => {
+    row.forEach((piece, j) => {
+      //If it's your own piece, light it up
+      if (piece && piece.color === orientation[0]) {
+        let square = SQUARES[8 * i + j];
+        squares.add(square);
+        if(piece.type === "k"){
+          console.log("Your king is at", square);
+          //if it's your king, light up all the squares around it even non possible moves
+          let surroundingSquares = kingSurroundingSquares(square);
+          squares = squares.union(surroundingSquares);
+        }else if(piece.type === "p"){
+          let squaresInFront = pawnSquareInFront(square, piece.color);
+          squares = squares.union(squaresInFront);
+        }
+      }
+    });
+  });
+
+  return squares;
+}
 
 
 function gameOverMessage(game) {
@@ -26,10 +92,12 @@ function gameOverMessage(game) {
 }
 
 export function ChessGame() {
-  const { settings, status, setStatus } = useContext(GameContext);
+  const { currentSettings, status, setStatus } = useContext(GameContext);
+  const singlePlayer = currentSettings.mode === "single";
+
   const [game, setGame] = useState(new Chess());
   const [orientation, setOrientation] = useState(
-    settings.mode === "single" ? (Math.random() > 0.5 ? "white" : "black") : settings.playerColor
+    singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
   );
 
   const turn = game.turn() === "w" ? "white" : "black";
@@ -68,8 +136,8 @@ export function ChessGame() {
   }
 
   function botMove(g = game) { 
-    console.log("botMove triggered with:", orientation, turn);
-    if(playing && settings.mode === "single"){
+    // console.log("botMove triggered with:", orientation, turn);
+    if(playing && singlePlayer){
       const move = getBotMove(g);
       let gameCopy = new Chess(g.fen());
       gameCopy.move(move);
@@ -80,8 +148,16 @@ export function ChessGame() {
   // On Turn Change
   useEffect(() => {
     console.log("useEffect triggered with turn:", turn);
+
+    if (currentSettings.lightsOut && playing) {
+      console.log(getLitupSquares(game, orientation));
+      const litupSquares = getLitupSquares(game, orientation);
+      console.log("Litup squares:", litupSquares);
+    }
+
+
     // if it's the computer's turn, make a move
-    if (turn !== orientation && settings.mode === "single") {
+    if (turn !== orientation && singlePlayer) {
       botMove();
     }
   }, [turn]);
@@ -98,13 +174,13 @@ export function ChessGame() {
   useEffect(() => {
     if (status === "Playing") {
       console.log("Game started");
-      const newOrientation = settings.mode === "single" ? (Math.random() > 0.5 ? "white" : "black") : settings.playerColor
+      const newOrientation = singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
       const newGame = new Chess();
       setOrientation(newOrientation);    
       setGame(newGame);
       
       // if it's the computer's turn first, trigger a move
-      if (newOrientation === "black" && settings.mode === "single") {
+      if (newOrientation === "black" && singlePlayer) {
         botMove(newGame);
       }
     }
