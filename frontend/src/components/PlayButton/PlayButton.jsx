@@ -8,7 +8,7 @@ export function PlayButton() {
     const playing = status === "Playing";
 
     function playGame() {
-        if (settings.mode === "single") {
+        if (settings.mode === "Single") {
             setCurrentSettings(settings);
             setStatus("Playing");
         }else{
@@ -17,7 +17,7 @@ export function PlayButton() {
     }
 
     function resign() {
-        if (currentSettings.mode === "single") {
+        if (currentSettings.mode === "Single") {
             setStatus("You resigned!");
         }else{
             api("/game/resign", "POST", setResponse)

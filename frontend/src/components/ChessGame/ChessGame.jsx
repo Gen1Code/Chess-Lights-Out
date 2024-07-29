@@ -165,6 +165,8 @@ export function ChessGame() {
     }
   }
 
+  
+
   function styleSquares(litupSquares) {
     console.log("styleSquares triggered");
 
@@ -198,10 +200,14 @@ export function ChessGame() {
     console.log("useEffect triggered with turn:", turn);
 
     if(playing){
-
+      // if maze is in shift, make shifts
       if(currentSettings.maze === "Shift"){
+        console.log("Maze:", maze.tree);
+        //console.log(maze.getMazeBorders());
+
         maze.scramble(2); // 2 shifts per turn
         console.log("Maze:", maze.tree);
+        //console.log(maze.getMazeBorders());
       }
 
       if (currentSettings.lightsOut){
@@ -243,8 +249,14 @@ export function ChessGame() {
       console.log("Game started");
       const newOrientation = singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
       const newGame = new Chess();
+      const newMaze = new OriginShiftMaze();
+
       setOrientation(newOrientation);    
       setGame(newGame);
+      setMaze(newMaze);
+
+      //TODO: Maze stuff
+
       styleSquares(getLitupSquares(newGame, newOrientation));
       
       // if it's the computer's turn first, trigger a move
