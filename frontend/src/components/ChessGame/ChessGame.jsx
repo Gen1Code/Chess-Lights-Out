@@ -4,7 +4,7 @@ import { Chess, SQUARES } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
 import { getBotMove } from "@utils/BasicChessBot";
-import { OriginShiftMaze } from "@utils/OriginShiftMaze";
+import { getRandomMaze, scramble, getMazeBorders } from "@utils/OriginShiftMaze";
 
 import "./ChessGame.css";
 
@@ -113,7 +113,7 @@ export function ChessGame() {
   const [orientation, setOrientation] = useState(
     singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
   );
-  const [maze, setMaze] = useState(new OriginShiftMaze());
+  const [maze, setMaze] = useState(getRandomMaze());
 
   const [squareStyles, setSquareStyles] = useState({});
   const [checkStyle, setCheckStyle] = useState({});
@@ -252,12 +252,14 @@ export function ChessGame() {
         console.log("Maze:", maze.tree);
         //console.log(maze.getMazeBorders());
 
-        maze.scramble(2); // 2 shifts per turn
+        let newMaze = scramble(maze,0); // 2 shifts per turn
+        setMaze(newMaze);
+
         console.log("Maze:", maze.tree);
         //console.log(maze.getMazeBorders());
       }
 
-      styleSquares(getLitupSquares(game, orientation), maze.getMazeBorders());
+      styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
 
       // if it's the computer's turn, make a move
       if(turn !== orientation && singlePlayer){
@@ -266,6 +268,17 @@ export function ChessGame() {
     }  
 
   }, [turn]);
+
+  function shiftMaze(){
+    setMaze(scramble(maze,1));
+  }
+
+  // If maze is edited then updpate stlyes
+  useEffect(() => {
+    console.log("useEffect triggered with maze:", maze);
+    styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
+  }, [maze]);
+
 
   // if king is in check, style the square
   useEffect(() => {
@@ -293,13 +306,13 @@ export function ChessGame() {
       console.log("Game started");
       const newOrientation = singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
       const newGame = new Chess();
-      const newMaze = new OriginShiftMaze();
+      const newMaze = getRandomMaze();
 
       setOrientation(newOrientation);    
       setGame(newGame);
       setMaze(newMaze);
 
-      styleSquares(getLitupSquares(newGame, newOrientation), newMaze.getMazeBorders());
+      styleSquares(getLitupSquares(newGame, newOrientation), getMazeBorders(newMaze));
       
       // if it's the computer's turn first, trigger a move
       if (newOrientation === "black" && singlePlayer) {
@@ -327,7 +340,10 @@ export function ChessGame() {
         message={status}
       />
       {process.env.NODE_ENV === 'development' && (
-        <button onClick={forcegame} >Force Game</button>
+        <>
+          <button onClick={forcegame} >Force Game</button>
+          <button onClick={shiftMaze} >Shift Maze</button>
+        </>
       )}
     </div>
   );
