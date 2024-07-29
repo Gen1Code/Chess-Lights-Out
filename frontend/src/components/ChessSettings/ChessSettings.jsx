@@ -14,9 +14,9 @@ export function ChessSettings() {
       <h3>Chess Settings</h3>
       <label>
         Mode:&nbsp;
-        <select name="mode" onChange={handleChange}>
-          <option value="single">Single Player</option>
-          <option value="multi">Multiplayer</option>
+        <select name="mode" value={settings.mode} onChange={handleChange}>
+          <option value="Single">Single Player</option>
+          <option value="Multi">Multiplayer</option>
         </select>
       </label>
       <a> </a>
@@ -27,10 +27,10 @@ export function ChessSettings() {
       <a> </a>
       <label>
         Maze:&nbsp;
-        <select name="maze" onChange={handleChange}>
-          <option value="off">Off</option>
-          <option value="static">Static</option>
-          <option value="shift">Shift</option>
+        <select name="maze" value={settings.maze} onChange={handleChange}>
+          <option value="Off">Off</option>
+          <option value="Static">Static</option>
+          <option value="Shift">Shift</option>
         </select>
       </label>
     </div>

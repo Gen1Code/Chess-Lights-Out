@@ -4,6 +4,7 @@ import { Chess, SQUARES } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
 import { getBotMove } from "@utils/BasicChessBot";
+import { OriginShiftMaze } from "@utils/OriginShiftMaze";
 
 import "./ChessGame.css";
 
@@ -39,7 +40,7 @@ function pawnSquareInFront(pawnSquare, color){
     
 
 function getLitupSquares(game, orientation) {
-  console.log("getLitupSquares triggered");
+  // console.log("getLitupSquares triggered");
 
   const moves = game.moves({ verbose: true });
   let squares = new Set();
@@ -92,8 +93,8 @@ function gameOverMessage(game) {
 function findKing(game, color) {
   let kingSquare = null;
   const board = game.board();
-  console.log("findKing triggered with color:", color);
-  console.log("board", board);
+  // console.log("findKing triggered with color:", color);
+  // console.log("board", board);
   board.forEach((row, i) => {
     row.forEach((piece, j) => {
       if (piece && piece.type === "k" && piece.color === color) {
@@ -106,12 +107,13 @@ function findKing(game, color) {
 
 export function ChessGame() {
   const { currentSettings, status, setStatus } = useContext(GameContext);
-  const singlePlayer = currentSettings.mode === "single";
+  const singlePlayer = currentSettings.mode === "Single";
 
   const [game, setGame] = useState(new Chess());
   const [orientation, setOrientation] = useState(
     singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
   );
+  const [maze, setMaze] = useState(new OriginShiftMaze());
 
   const [squareStyles, setSquareStyles] = useState({});
   const [checkStyle, setCheckStyle] = useState({});
@@ -195,31 +197,35 @@ export function ChessGame() {
   useEffect(() => {
     console.log("useEffect triggered with turn:", turn);
 
-    if (currentSettings.lightsOut && playing) {
-      console.log(getLitupSquares(game, orientation));
-      const litupSquares = getLitupSquares(game, orientation);
-      styleSquares(litupSquares);
-      console.log("Litup squares:", litupSquares);
-    }
+    if(playing){
 
+      if(currentSettings.maze === "Shift"){
+        maze.scramble(2); // 2 shifts per turn
+        console.log("Maze:", maze.tree);
+      }
 
-    // if it's the computer's turn, make a move
-    if (turn !== orientation && singlePlayer && playing) {
-      botMove();
-    }
+      if (currentSettings.lightsOut){
+          const litupSquares = getLitupSquares(game, orientation);
+          styleSquares(litupSquares);
+          console.log("Litup squares:", litupSquares);
+      }
+
+      // if it's the computer's turn, make a move
+      if(turn !== orientation && singlePlayer){
+        botMove();
+      }
+    }  
 
   }, [turn]);
 
   // if king is in check, style the square
   useEffect(() => {
-    console.log("useEffect triggered with inCheck:", inCheck);
+    // console.log("useEffect triggered with inCheck:", inCheck);
     let styles = {};
-
     if (inCheck) {
       const kingSquare = findKing(game, orientation[0]);
       styles[kingSquare] = { backgroundColor: "rgba(255,0,0,0.25)" };
     }
-    console.log("checkStyle", styles);
     setCheckStyle(styles);
   }, [inCheck]);
 
