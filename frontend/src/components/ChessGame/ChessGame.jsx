@@ -165,7 +165,60 @@ export function ChessGame() {
     }
   }
 
-  
+  function styleSquares_Maze(borders){
+    console.log("styleSquares_Maze triggered");
+    console.log("borders", borders);
+
+    if(currentSettings.maze === "Off"){
+      setSquareStyles({});
+      return;
+    }
+
+    if (orientation === "black"){
+      //flip the maze for black player
+      let newBorders = {};
+      Object.keys(borders).forEach((squareIndex) => {
+        newBorders[squareIndex] = new Set();
+        if(borders[squareIndex].has("top")){
+          newBorders[squareIndex].add("bottom");
+        }
+        if(borders[squareIndex].has("bottom")){
+          newBorders[squareIndex].add("top");
+        }
+        if(borders[squareIndex].has("left")){
+          newBorders[squareIndex].add("right");
+        }
+        if(borders[squareIndex].has("right")){
+          newBorders[squareIndex].add("left");
+        }
+      });
+      borders = newBorders;
+    }
+
+    let styles = {};
+    Object.keys(borders).forEach((squareIndex) => {
+      let square = SQUARES[squareIndex];
+      let style = {boxSizing: "border-box"};
+      if(borders[squareIndex].has("top")){
+        style.borderTop = "3px solid black";
+      }
+      if(borders[squareIndex].has("bottom")){
+        style.borderBottom = "3px solid black";
+      }
+      if(borders[squareIndex].has("left")){
+        style.borderLeft = "3px solid black";
+      }
+      if(borders[squareIndex].has("right")){
+        style.borderRight = "3px solid black";
+      }
+      styles[square] = style;
+    });
+
+    console.log("styles", styles);
+    setSquareStyles(styles);
+
+  }
+
 
   function styleSquares(litupSquares) {
     console.log("styleSquares triggered");
@@ -208,6 +261,7 @@ export function ChessGame() {
         maze.scramble(2); // 2 shifts per turn
         console.log("Maze:", maze.tree);
         //console.log(maze.getMazeBorders());
+        styleSquares_Maze(maze.getMazeBorders());
       }
 
       if (currentSettings.lightsOut){
@@ -230,7 +284,8 @@ export function ChessGame() {
     let styles = {};
     if (inCheck) {
       const kingSquare = findKing(game, orientation[0]);
-      styles[kingSquare] = { backgroundColor: "rgba(255,0,0,0.25)" };
+      styles[kingSquare] = squareStyles[kingSquare] || {};
+      styles[kingSquare].backgroundColor = "rgba(255,0,0,0.25)";
     }
     setCheckStyle(styles);
   }, [inCheck]);

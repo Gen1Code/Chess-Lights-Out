@@ -51,16 +51,16 @@ export class OriginShiftMaze {
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
         if (tree[i][j]) {
-          if (i * 8 + j - tree[i][j] === 8) {
+          if ((i * 8 + j) - tree[i][j] === 8) {
             borders[i * 8 + j].delete("top");
             borders[tree[i][j]].delete("bottom");
-          } else if (i * 8 + j - tree[i][j] === -8) {
+          } else if ((i * 8 + j) - tree[i][j] === -8) {
             borders[i * 8 + j].delete("bottom");
             borders[tree[i][j]].delete("top");
-          } else if (i * 8 + j - tree[i][j] === 1) {
+          } else if ((i * 8 + j) - tree[i][j] === 1) {
             borders[i * 8 + j].delete("left");
             borders[tree[i][j]].delete("right");
-          } else if (i * 8 + j - tree[i][j] === -1) {
+          } else if ((i * 8 + j) - tree[i][j] === -1) {
             borders[i * 8 + j].delete("right");
             borders[tree[i][j]].delete("left");
           } else {
