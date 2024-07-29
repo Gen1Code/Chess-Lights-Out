@@ -271,7 +271,10 @@ function makeBestMove(game, color) {
   } else {
     var move = getBestMove(game, color, -globalSum)[0];
   }
-
+  
+  if (move === null) {
+    return null;
+  }
   globalSum = evaluateBoard(game, move, globalSum, "b");
 
   return move;
