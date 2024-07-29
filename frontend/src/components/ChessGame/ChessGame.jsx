@@ -174,13 +174,68 @@ export function ChessGame() {
     }
   }
 
+  function styleForMaze(styles, borders){
+    //flip the maze for black player
+    if (orientation === "black"){
+      let newBorders = {};
+      Object.keys(borders).forEach((squareIndex) => {
+        newBorders[squareIndex] = new Set();
+        if(borders[squareIndex].has("top")){
+          newBorders[squareIndex].add("bottom");
+        }
+        if(borders[squareIndex].has("bottom")){
+          newBorders[squareIndex].add("top");
+        }
+        if(borders[squareIndex].has("left")){
+          newBorders[squareIndex].add("right");
+        }
+        if(borders[squareIndex].has("right")){
+          newBorders[squareIndex].add("left");
+        }
+      });
+      borders = newBorders;
+    }
+
+    Object.keys(borders).forEach((squareIndex) => {
+      let square = SQUARES[squareIndex];
+      styles[square].boxSizing = "border-box";
+
+      if(borders[squareIndex].has("top")){
+        styles[square].borderTop = "3px solid firebrick";
+      }
+      if(borders[squareIndex].has("bottom")){
+        styles[square].borderBottom = "3px solid firebrick";
+      }
+      if(borders[squareIndex].has("left")){
+        styles[square].borderLeft = "3px solid firebrick";
+      }
+      if(borders[squareIndex].has("right")){
+        styles[square].borderRight = "3px solid firebrick";
+      }
+    });
+
+    return styles;
+  }
+
+  function styleForLightsOut(styles, litupSquares){
+    let squares = new Set(SQUARES);
+
+    //Remove the squares that are lit up
+    litupSquares.forEach((square) => {
+      squares.delete(square);
+    });
+
+    squares.forEach((square) => {
+      //Make child element invisible and background dark    
+       styles[square].contentVisibility = "hidden";
+       styles[square].backgroundColor = "rgb(20, 20, 20)";
+    });
+
+    return styles;
+  }
+
   function styleSquares(litupSquares, borders) {
     console.log("styleSquares triggered");
-
-    if(playing === false){
-      setSquareStyles({});
-      return;
-    }
 
     let styles = {};
     let allSquares = new Set(SQUARES);
@@ -189,62 +244,12 @@ export function ChessGame() {
       styles[square] = {};
     });
 
-
-    if(currentSettings.lightsOut){
-
-      litupSquares.forEach((square) => {
-        allSquares.delete(square);
-      });
-  
-      allSquares.forEach((square) => {
-        styles[square] = { 
-          //Make only child element invisible
-          contentVisibility: "hidden",
-          backgroundColor: "rgb(20, 20, 20)",        
-         };
-      });
+    if(currentSettings.lightsOut && playing){
+      styles = styleForLightsOut(styles, litupSquares);
     }
 
     if(currentSettings.maze !== "Off"){
-      
-      //flip the maze for black player
-      if (orientation === "black"){
-        let newBorders = {};
-        Object.keys(borders).forEach((squareIndex) => {
-          newBorders[squareIndex] = new Set();
-          if(borders[squareIndex].has("top")){
-            newBorders[squareIndex].add("bottom");
-          }
-          if(borders[squareIndex].has("bottom")){
-            newBorders[squareIndex].add("top");
-          }
-          if(borders[squareIndex].has("left")){
-            newBorders[squareIndex].add("right");
-          }
-          if(borders[squareIndex].has("right")){
-            newBorders[squareIndex].add("left");
-          }
-        });
-        borders = newBorders;
-      }
-  
-      Object.keys(borders).forEach((squareIndex) => {
-        let square = SQUARES[squareIndex];
-        styles[square].boxSizing = "border-box";
-
-        if(borders[squareIndex].has("top")){
-          styles[square].borderTop = "3px solid firebrick";
-        }
-        if(borders[squareIndex].has("bottom")){
-          styles[square].borderBottom = "3px solid firebrick";
-        }
-        if(borders[squareIndex].has("left")){
-          styles[square].borderLeft = "3px solid firebrick";
-        }
-        if(borders[squareIndex].has("right")){
-          styles[square].borderRight = "3px solid firebrick";
-        }
-      });
+      styles = styleForMaze(styles, borders);
     }
 
     console.log("styles", styles);
@@ -273,20 +278,19 @@ export function ChessGame() {
     setMaze(scramble(maze, 1));
   }
 
-  // If maze is edited then updpate stlyes
+  // If something occurs that changes the board, style the squares
   useEffect(() => {
     console.log("useEffect triggered with maze:", maze);
     styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
-  }, [maze, game]);
+  }, [maze, game, status]);
 
 
   // if king is in check, style the square
   useEffect(() => {
-    // console.log("useEffect triggered with inCheck:", inCheck);
     let styles = {};
     if (inCheck) {
       const kingSquare = findKing(game, orientation[0]);
-      styles[kingSquare] = squareStyles[kingSquare] || {};
+      styles[kingSquare] = squareStyles[kingSquare];
       styles[kingSquare].backgroundColor = "rgba(255,0,0,0.25)";
     }
     setCheckStyle(styles);
@@ -316,8 +320,6 @@ export function ChessGame() {
       if (newOrientation === "black" && singlePlayer) {
         botMove(newGame);
       }
-    }else{
-      setSquareStyles({});
     }
   }, [status]);
 
