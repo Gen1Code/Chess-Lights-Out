@@ -42,6 +42,14 @@ function pawnSquareInFront(pawnSquare, color){
 function getLitupSquares(game, orientation) {
   // console.log("getLitupSquares triggered");
 
+
+  //Make it your turn (done for moves function to work properly)
+  if(game.turn() !== orientation[0]){
+    let splitFen = game.fen().split(" ");
+    splitFen[1] = splitFen[1] === "w" ? "b" : "w";
+    game = new Chess(splitFen.join(" "));
+  }
+
   const moves = game.moves({ verbose: true });
   let squares = new Set();
   moves.forEach((move) => {
@@ -113,7 +121,8 @@ export function ChessGame() {
   const [orientation, setOrientation] = useState(
     singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
   );
-  const [maze, setMaze] = useState(getRandomMaze());
+
+  const [maze, setMaze] = useState(() => getRandomMaze());
 
   const [squareStyles, setSquareStyles] = useState({});
   const [checkStyle, setCheckStyle] = useState({});
@@ -249,17 +258,8 @@ export function ChessGame() {
     if(playing){
       // if maze is in shift, make shifts
       if(currentSettings.maze === "Shift"){
-        console.log("Maze:", maze.tree);
-        //console.log(maze.getMazeBorders());
-
-        let newMaze = scramble(maze,0); // 2 shifts per turn
-        setMaze(newMaze);
-
-        console.log("Maze:", maze.tree);
-        //console.log(maze.getMazeBorders());
+        setMaze(scramble(maze, 2));
       }
-
-      styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
 
       // if it's the computer's turn, make a move
       if(turn !== orientation && singlePlayer){
@@ -270,14 +270,14 @@ export function ChessGame() {
   }, [turn]);
 
   function shiftMaze(){
-    setMaze(scramble(maze,1));
+    setMaze(scramble(maze, 1));
   }
 
   // If maze is edited then updpate stlyes
   useEffect(() => {
     console.log("useEffect triggered with maze:", maze);
     styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
-  }, [maze]);
+  }, [maze, game]);
 
 
   // if king is in check, style the square
@@ -311,8 +311,6 @@ export function ChessGame() {
       setOrientation(newOrientation);    
       setGame(newGame);
       setMaze(newMaze);
-
-      styleSquares(getLitupSquares(newGame, newOrientation), getMazeBorders(newMaze));
       
       // if it's the computer's turn first, trigger a move
       if (newOrientation === "black" && singlePlayer) {

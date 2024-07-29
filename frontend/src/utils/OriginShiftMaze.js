@@ -13,10 +13,11 @@ const defaultMaze = {
 };
 
 export function getRandomMaze() {
-  return scramble(defaultMaze);
+  return scramble(defaultMaze, 400);
 }
 
-export function scramble(maze, n = 400) {
+export function scramble(maze, n) {
+  // console.log("scramble", maze, n)
   let newMaze = { ...maze }
   for (let i = 0; i < n; i++) {
     let rootChoices = [];
