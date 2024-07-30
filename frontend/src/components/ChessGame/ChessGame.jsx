@@ -4,7 +4,7 @@ import { Chess, SQUARES } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
 import { getBotMove } from "@utils/BasicChessBot";
-import { getRandomMaze, scramble, getMazeBorders } from "@utils/OriginShiftMaze";
+import { getRandomMaze, scramble, getMazeBorders, validMoveInMaze } from "@utils/OriginShiftMaze";
 
 import "./ChessGame.css";
 
@@ -133,23 +133,42 @@ export function ChessGame() {
   const isGameOver = game.isGameOver();
 
   function makeAMove(move) {
-    const gameCopy = new Chess(game.fen());
+    const gameCopy = new Chess();
+    gameCopy.loadPgn(game.pgn());
+    
+    console.log("Move made", move);
     try {
       gameCopy.move(move);
     } catch (e) {
       console.log("Invalid move", move);
+      console.error(e);
       return;
     }
     setGame(gameCopy);
   }
 
-  function onDrop(sourceSquare, targetSquare) {
+  function onDrop(sourceSquare, targetSquare, piece) {
     if (turn !== orientation || isGameOver || !playing) return;
-    makeAMove({
+
+    let move = {
+      color: piece[0],
       from: sourceSquare,
       to: targetSquare,
+      piece: piece[1].toLowerCase(),
       promotion: "q", // always promote to a queen for simplicity
-    });
+    };
+    
+
+    // check if the move is legal
+    if(currentSettings.maze !== "Off"){
+      if(!validMoveInMaze(maze, move)){
+        console.log("Invalid move in maze");
+        console.log("Move", move);
+        return;
+      }
+    }
+
+    makeAMove(move);
   }
 
   function forcegame(){
@@ -168,7 +187,8 @@ export function ChessGame() {
     if(playing && singlePlayer){
       const move = getBotMove(g);
       if (!move) return;
-      let gameCopy = new Chess(g.fen());
+      let gameCopy = new Chess();
+      gameCopy.loadPgn(g.pgn());
       gameCopy.move(move);
       setGame(gameCopy);
     }
@@ -275,7 +295,7 @@ export function ChessGame() {
   }, [turn]);
 
   function shiftMaze(){
-    setMaze(scramble(maze, 1));
+    setMaze(scramble(maze, 400));
   }
 
   // If something occurs that changes the board, style the squares
