@@ -1,50 +1,29 @@
 import { useEffect, useState, useContext } from "react";
 import { GameContext } from "@context/GameContext";
-import { Chess, SQUARES } from "chess.js";
+import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
 import { getBotMove } from "@utils/BasicChessBot";
-import { getRandomMaze, scramble, getMazeBorders, validMoveInMaze } from "@utils/OriginShiftMaze";
+import {
+  getRandomMaze,
+  scramble,
+  getMazeBorders,
+  validMoveInMaze,
+} from "@utils/OriginShiftMaze";
+import {
+  pawnSquareInFront,
+  kingSurroundingSquares,
+  gameOverMessage,
+  findKing,
+  SQUARES,
+} from "@utils/ChessUtils";
 
 import "./ChessGame.css";
 
-function kingSurroundingSquares(kingSquare){
-  let squares = new Set();
-  let [file, rank] = kingSquare.split("");
-  let fileIndex = "abcdefgh".indexOf(file);
-  let rankIndex = "12345678".indexOf(rank);
-  for(let i = -1; i <= 1; i++){
-    for(let j = -1; j <= 1; j++){
-      let newFileIndex = fileIndex + i;
-      let newRankIndex = rankIndex + j;
-      if(newFileIndex >= 0 && newFileIndex <= 7 && newRankIndex >= 0 && newRankIndex <= 7){
-        squares.add("abcdefgh"[newFileIndex] + "12345678"[newRankIndex]);
-      }
-    }
-  }
-  return squares;
-}
-
-function pawnSquareInFront(pawnSquare, color){
-  let squares = new Set();
-  //if it's your pawn, light up the squares in front of it
-  let [file, rank] = pawnSquare.split("");
-  let rankIndex = "12345678".indexOf(rank);
-  let direction = color === "w" ? 1 : -1;
-  let newRankIndex = rankIndex + direction;
-  if(newRankIndex >= 0 && newRankIndex <= 7){
-    squares.add(file + "12345678"[newRankIndex]);
-  }
-    return squares;
-}
-    
-
 function getLitupSquares(game, orientation) {
   // console.log("getLitupSquares triggered");
-
-
   //Make it your turn (done for moves function to work properly)
-  if(game.turn() !== orientation[0]){
+  if (game.turn() !== orientation[0]) {
     let splitFen = game.fen().split(" ");
     splitFen[1] = splitFen[1] === "w" ? "b" : "w";
     game = new Chess(splitFen.join(" "));
@@ -57,18 +36,18 @@ function getLitupSquares(game, orientation) {
   });
 
   const board = game.board();
-  
+
   board.forEach((row, i) => {
     row.forEach((piece, j) => {
       if (piece && piece.color === orientation[0]) {
         let square = SQUARES[8 * i + j];
         //If it's your own piece, light it up
         squares.add(square);
-        if(piece.type === "k"){
+        if (piece.type === "k") {
           //if it's your king, light up all the squares around it even non possible moves
           let surroundingSquares = kingSurroundingSquares(square);
           squares = squares.union(surroundingSquares);
-        }else if(piece.type === "p"){
+        } else if (piece.type === "p") {
           // if it's your pawn, light up the square in front of it
           let squaresInFront = pawnSquareInFront(square, piece.color);
           squares = squares.union(squaresInFront);
@@ -78,47 +57,15 @@ function getLitupSquares(game, orientation) {
   });
 
   //If you are in check light up the checking pieces (change to .attackers() when new chess.js npm package is released)
-  if(game.inCheck()){
+  if (game.inCheck()) {
     let lastMove = game.pgn().split(" ").pop();
     //second to last and third to last is the position moved to
-    let checkingPiece = lastMove[lastMove.length - 3] + lastMove[lastMove.length - 2];
+    let checkingPiece =
+      lastMove[lastMove.length - 3] + lastMove[lastMove.length - 2];
     squares.add(checkingPiece);
   }
 
   return squares;
-}
-
-
-function gameOverMessage(game) {
-  if (game.isCheckmate()) {
-    return "Checkmate!";
-  } else if (game.isInsufficientMaterial()) {
-    return "Insufficient Material!";
-  } else if (game.isStalemate()) {
-    return "Stalemate!";
-  } else if (game.isThreefoldRepetition()) {
-    return "Threefold Repetition!";
-  } else if (game.isDraw()) {
-    return "50 Move Rule!";
-  } else {
-    console.error("Game over but no reason found");
-    return "Game Over!";
-  }
-}
-
-function findKing(game, color) {
-  let kingSquare = null;
-  const board = game.board();
-  // console.log("findKing triggered with color:", color);
-  // console.log("board", board);
-  board.forEach((row, i) => {
-    row.forEach((piece, j) => {
-      if (piece && piece.type === "k" && piece.color === color) {
-        kingSquare = SQUARES[8 * i + j];
-      }
-    });
-  });
-  return kingSquare;
 }
 
 export function ChessGame() {
@@ -127,7 +74,11 @@ export function ChessGame() {
 
   const [game, setGame] = useState(new Chess());
   const [orientation, setOrientation] = useState(
-    singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
+    singlePlayer
+      ? Math.random() > 0.5
+        ? "white"
+        : "black"
+      : currentSettings.playerColor
   );
 
   const [maze, setMaze] = useState(() => getRandomMaze());
@@ -143,7 +94,7 @@ export function ChessGame() {
   function makeAMove(move) {
     const gameCopy = new Chess();
     gameCopy.loadPgn(game.pgn());
-    
+
     console.log("Move made", move);
     try {
       gameCopy.move(move);
@@ -165,11 +116,10 @@ export function ChessGame() {
       piece: piece[1].toLowerCase(),
       promotion: "q", // always promote to a queen for simplicity
     };
-    
 
     // check if the move is legal
-    if(currentSettings.maze !== "Off"){
-      if(!validMoveInMaze(maze, move)){
+    if (currentSettings.maze !== "Off") {
+      if (!validMoveInMaze(maze, move)) {
         console.log("Invalid move in maze");
         console.log("Move", move);
         return;
@@ -179,20 +129,24 @@ export function ChessGame() {
     makeAMove(move);
   }
 
-  function forcegame(){
+  //Dev testing functions (remove when done)
+  function forcegame() {
     let fen = "k7/6Q1/3N4/8/3b3q/8/8/5K2 ";
-    if(orientation === "white"){
-      fen+="w"
-    }else {
-      fen+="b";
+    if (orientation === "white") {
+      fen += "w";
+    } else {
+      fen += "b";
     }
-    fen+=" - - 0 1";
+    fen += " - - 0 1";
     setGame(new Chess(fen));
   }
+  function shiftMaze() {
+    setMaze(scramble(maze, 400));
+  }
 
-  function botMove(g = game) { 
+  function botMove(g = game) {
     // console.log("botMove triggered with:", orientation, turn);
-    if(playing && singlePlayer){
+    if (playing && singlePlayer) {
       const move = getBotMove(g);
       if (!move) return;
       let gameCopy = new Chess();
@@ -202,22 +156,22 @@ export function ChessGame() {
     }
   }
 
-  function styleForMaze(styles, borders){
+  function styleForMaze(styles, borders) {
     //flip the maze for black player
-    if (orientation === "black"){
+    if (orientation === "black") {
       let newBorders = {};
       Object.keys(borders).forEach((squareIndex) => {
         newBorders[squareIndex] = new Set();
-        if(borders[squareIndex].has("top")){
+        if (borders[squareIndex].has("top")) {
           newBorders[squareIndex].add("bottom");
         }
-        if(borders[squareIndex].has("bottom")){
+        if (borders[squareIndex].has("bottom")) {
           newBorders[squareIndex].add("top");
         }
-        if(borders[squareIndex].has("left")){
+        if (borders[squareIndex].has("left")) {
           newBorders[squareIndex].add("right");
         }
-        if(borders[squareIndex].has("right")){
+        if (borders[squareIndex].has("right")) {
           newBorders[squareIndex].add("left");
         }
       });
@@ -228,16 +182,16 @@ export function ChessGame() {
       let square = SQUARES[squareIndex];
       styles[square].boxSizing = "border-box";
 
-      if(borders[squareIndex].has("top")){
+      if (borders[squareIndex].has("top")) {
         styles[square].borderTop = "3px solid firebrick";
       }
-      if(borders[squareIndex].has("bottom")){
+      if (borders[squareIndex].has("bottom")) {
         styles[square].borderBottom = "3px solid firebrick";
       }
-      if(borders[squareIndex].has("left")){
+      if (borders[squareIndex].has("left")) {
         styles[square].borderLeft = "3px solid firebrick";
       }
-      if(borders[squareIndex].has("right")){
+      if (borders[squareIndex].has("right")) {
         styles[square].borderRight = "3px solid firebrick";
       }
     });
@@ -245,7 +199,7 @@ export function ChessGame() {
     return styles;
   }
 
-  function styleForLightsOut(styles, litupSquares){
+  function styleForLightsOut(styles, litupSquares) {
     let squares = new Set(SQUARES);
 
     //Remove the squares that are lit up
@@ -254,9 +208,9 @@ export function ChessGame() {
     });
 
     squares.forEach((square) => {
-      //Make child element invisible and background dark    
-       styles[square].contentVisibility = "hidden";
-       styles[square].backgroundColor = "rgb(20, 20, 20)";
+      //Make child element invisible and background dark
+      styles[square].contentVisibility = "hidden";
+      styles[square].backgroundColor = "rgb(20, 20, 20)";
     });
 
     return styles;
@@ -272,11 +226,11 @@ export function ChessGame() {
       styles[square] = {};
     });
 
-    if(currentSettings.lightsOut && playing){
+    if (currentSettings.lightsOut && playing) {
       styles = styleForLightsOut(styles, litupSquares);
     }
 
-    if(currentSettings.maze !== "Off"){
+    if (currentSettings.maze !== "Off") {
       styles = styleForMaze(styles, borders);
     }
 
@@ -288,30 +242,24 @@ export function ChessGame() {
   useEffect(() => {
     console.log("useEffect triggered with turn:", turn);
 
-    if(playing){
+    if (playing) {
       // if maze is in shift, make shifts
-      if(currentSettings.maze === "Shift"){
+      if (currentSettings.maze === "Shift") {
         setMaze(scramble(maze, 2));
       }
 
       // if it's the computer's turn, make a move
-      if(turn !== orientation && singlePlayer){
+      if (turn !== orientation && singlePlayer) {
         botMove();
       }
-    }  
-
+    }
   }, [turn]);
-
-  function shiftMaze(){
-    setMaze(scramble(maze, 400));
-  }
 
   // If something occurs that changes the board, style the squares
   useEffect(() => {
     console.log("useEffect triggered with maze:", maze);
     styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
   }, [maze, game, status]);
-
 
   // if king is in check, style the square
   useEffect(() => {
@@ -330,21 +278,25 @@ export function ChessGame() {
       console.log("Game over");
       setStatus(gameOverMessage(game));
     }
-  }, [isGameOver]);    
+  }, [isGameOver]);
 
   // On Game Start
   useEffect(() => {
     if (status === "Playing") {
       console.log("Game started");
-      const newOrientation = singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.playerColor
+      const newOrientation = singlePlayer
+        ? Math.random() > 0.5
+          ? "white"
+          : "black"
+        : currentSettings.playerColor;
       const newGame = new Chess();
       const newMaze = getRandomMaze();
 
-      setOrientation(newOrientation);    
+      setOrientation(newOrientation);
       setGame(newGame);
       setMaze(newMaze);
-      
-      // if it's the computer's turn first, trigger a move
+
+      // if it's the computer's turn first, trigger a mov
       if (newOrientation === "black" && singlePlayer) {
         botMove(newGame);
       }
@@ -360,17 +312,14 @@ export function ChessGame() {
         boardOrientation={orientation}
         isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
         arePiecesDraggable={!isGameOver}
-        customSquareStyles={{...squareStyles, ...checkStyle}}
+        customSquareStyles={{ ...squareStyles, ...checkStyle }}
       />
       {playing === false && <div className="mist-overlay"></div>}
-      <GameOverCard
-        className="card"
-        message={status}
-      />
-      {process.env.NODE_ENV === 'development' && (
+      <GameOverCard className="card" message={status} />
+      {process.env.NODE_ENV === "development" && (
         <>
-          <button onClick={forcegame} >Force Game</button>
-          <button onClick={shiftMaze} >Shift Maze</button>
+          <button onClick={forcegame}>Force Game</button>
+          <button onClick={shiftMaze}>Shift Maze</button>
         </>
       )}
     </div>
