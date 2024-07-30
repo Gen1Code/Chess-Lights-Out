@@ -15,7 +15,7 @@ const defaultMaze = {
 };
 
 export function getRandomMaze() {
-  return scramble(defaultMaze, 0);
+  return scramble(defaultMaze, 1000);
 }
 
 export function scramble(maze, n) {

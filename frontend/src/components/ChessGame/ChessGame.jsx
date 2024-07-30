@@ -89,7 +89,25 @@ export function ChessGame() {
   const turn = game.turn() === "w" ? "white" : "black";
   const playing = status === "Playing";
   const inCheck = game.inCheck() && turn === orientation;
-  const isGameOver = game.isGameOver();
+  const mazeIsOn = currentSettings.maze !== "Off";
+  const isGameOver = mazeIsOn
+    ? detctGameOverMaze(game, maze)
+    : game.isGameOver();
+
+  function detctGameOverMaze(game, maze) {
+    if (!playing) return true;
+
+    let moves = game.moves({ verbose: true });
+    moves.forEach((move) => {
+      if (!validMoveInMaze(maze, move)) {
+        moves.splice(moves.indexOf(move), 1);
+      }
+    });
+    if (moves.length === 0) {
+      return true;
+    }
+    return false;
+  }
 
   function makeAMove(move) {
     const gameCopy = new Chess();
@@ -118,7 +136,7 @@ export function ChessGame() {
     };
 
     // check if the move is legal
-    if (currentSettings.maze !== "Off") {
+    if (mazeIsOn) {
       if (!validMoveInMaze(maze, move)) {
         console.log("Invalid move in maze");
         console.log("Move", move);
@@ -230,7 +248,7 @@ export function ChessGame() {
       styles = styleForLightsOut(styles, litupSquares);
     }
 
-    if (currentSettings.maze !== "Off") {
+    if (mazeIsOn) {
       styles = styleForMaze(styles, borders);
     }
 
@@ -276,7 +294,23 @@ export function ChessGame() {
   useEffect(() => {
     if (isGameOver) {
       console.log("Game over");
-      setStatus(gameOverMessage(game));
+      if (mazeIsOn) {
+        let moves = game.moves({ verbose: true });
+        moves.forEach((move) => {
+          if (!validMoveInMaze(maze, move)) {
+            moves.splice(moves.indexOf(move), 1);
+          }
+        });
+        if (moves.length === 0) {
+          if (game.inCheck()) {
+            setStatus("Checkmate!");
+          } else {
+            setStatus("Stalemate!");
+          }
+        }
+      } else {
+        setStatus(gameOverMessage(game));
+      }
     }
   }, [isGameOver]);
 
