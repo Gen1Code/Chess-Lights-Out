@@ -77,6 +77,14 @@ function getLitupSquares(game, orientation) {
     });
   });
 
+  //If you are in check light up the checking pieces (change to .attackers() when new chess.js npm package is released)
+  if(game.inCheck()){
+    let lastMove = game.pgn().split(" ").pop();
+    //second to last and third to last is the position moved to
+    let checkingPiece = lastMove[lastMove.length - 3] + lastMove[lastMove.length - 2];
+    squares.add(checkingPiece);
+  }
+
   return squares;
 }
 
