@@ -91,7 +91,6 @@ export function validMoveInMaze(maze, move) {
   let source = move.from;
   let target = move.to;
 
-
   if (piece === "n") {
     return true;
   }
@@ -100,8 +99,20 @@ export function validMoveInMaze(maze, move) {
   let sourceIndex = SQUARES.indexOf(source);
   let targetIndex = SQUARES.indexOf(target);
 
+  if (piece === "k" || piece === "q" || piece === "p") {
+    //Detect if straight or diagonal movement
+    let rankMovement = source[0] !== target[0];
+    let fileMovement = source[1] !== target[1];
+
+    if (rankMovement && fileMovement) {
+      piece = "b";
+    } else {
+      piece = "r";
+    }
+  }
+
+  //Straight Movement
   if (piece === "r") {
-    //Straight Movement
     let rankMovement = source[0] === target[0];
     let step = rankMovement ? 8 : 1;
     step = sourceIndex < targetIndex ? step : -step;
@@ -120,11 +131,11 @@ export function validMoveInMaze(maze, move) {
       current = next;
     }
     return true;
-  }else if (piece === "b") {
-    //Diagonal Movement
+  } else if (piece === "b") {
+    // Diagonal Movement
     let goingDown = sourceIndex < targetIndex;
     let goingRight = sourceIndex % 8 < targetIndex % 8;
-    
+
     let step = goingDown ? 9 : -7;
     step = goingRight ? step : step - 2;
 
@@ -140,38 +151,21 @@ export function validMoveInMaze(maze, move) {
       let option2 = current + midStep2;
 
       if (
-        (
-          (
-            tree[Math.floor(current / 8)][current % 8] !== option1 &&
-            tree[Math.floor(option1 / 8)][option1 % 8] !== current
-          ) 
-          ||
-          (
-            tree[Math.floor(option1 / 8)][option1 % 8] !== next &&
-            tree[Math.floor(next / 8)][next % 8] !== option1
-          )
-        ) 
-        &&
-        (
-          (
-            tree[Math.floor(current / 8)][current % 8] !== option2 &&
-            tree[Math.floor(option2 / 8)][option2 % 8] !== current
-          ) 
-          ||
-          (
-            tree[Math.floor(option2 / 8)][option2 % 8] !== next &&
-            tree[Math.floor(next / 8)][next % 8] !== option2
-          )
-        ) 
+        ((tree[Math.floor(current / 8)][current % 8] !== option1 &&
+          tree[Math.floor(option1 / 8)][option1 % 8] !== current) ||
+          (tree[Math.floor(option1 / 8)][option1 % 8] !== next &&
+            tree[Math.floor(next / 8)][next % 8] !== option1)) &&
+        ((tree[Math.floor(current / 8)][current % 8] !== option2 &&
+          tree[Math.floor(option2 / 8)][option2 % 8] !== current) ||
+          (tree[Math.floor(option2 / 8)][option2 % 8] !== next &&
+            tree[Math.floor(next / 8)][next % 8] !== option2))
       ) {
         return false;
       }
       current = next;
     }
-    
     return true;
-
   }
-
+  console.error("Invalid piece type");
   return true;
 }
