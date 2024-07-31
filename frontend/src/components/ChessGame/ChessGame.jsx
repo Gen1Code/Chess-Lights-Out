@@ -20,6 +20,10 @@ import {
 
 import "./ChessGame.css";
 
+//Bug/Feature?
+//Check in Maze has side effects due to .moves() of chess.js
+// side effects are checking through walls and "false" pins being created
+
 function getLitupSquares(game, orientation) {
   // console.log("getLitupSquares triggered");
   //Make it your turn (done for moves function to work properly)
@@ -99,13 +103,13 @@ export function ChessGame() {
 
     let moves = game.moves({ verbose: true });
     let movesRemaining = [];
-    console.log("valid moves", moves);
+    // console.log("valid moves", moves);
     moves.forEach((move) => {
       if (validMoveInMaze(maze, move)) {
         movesRemaining.push(move);
       }
     });
-    console.log("valid moves after maze", movesRemaining);
+    // console.log("valid moves after maze", movesRemaining);
     if (movesRemaining.length === 0) {
       return true;
     }
@@ -166,9 +170,13 @@ export function ChessGame() {
   }
 
   function botMove(g = game) {
-    // console.log("botMove triggered with:", orientation, turn);
+    // console.log("botMove triggered with:", orientation, turn, mazeIsOn);
     if (playing && singlePlayer) {
-      const move = getBotMove(g);
+      let mazeCopy = maze;
+      if (!mazeIsOn){
+        mazeCopy = null;
+      }
+      const move = getBotMove(g, mazeCopy);
       if (!move) return;
       let gameCopy = new Chess();
       gameCopy.loadPgn(g.pgn());
@@ -179,7 +187,6 @@ export function ChessGame() {
 
   function styleForMaze(styles, borders) {
     //flip the maze for black player
-    console.log("borders before fliiping",borders)
     if (orientation === "black") {
       let newBorders = {};
       Object.keys(borders).forEach((squareIndex) => {
@@ -217,7 +224,7 @@ export function ChessGame() {
         styles[square].borderRight = "3px solid firebrick";
       }
     });
-    console.log("styles:", styles);
+    // console.log("styles:", styles);
 
     return styles;
   }
@@ -281,7 +288,7 @@ export function ChessGame() {
   // If something occurs that changes the board, style the squares
   useEffect(() => {
     // console.log("useEffect triggered with maze:", maze);
-    console.log(maze);
+    // console.log(maze);
     styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
   }, [maze, game, status]);
 

@@ -1,4 +1,5 @@
 import { Chess } from "chess.js";
+import { validMoveInMaze } from "./OriginShiftMaze";
 
 // Chess AI taken from zeyu2001's chess-bot project on GitHub
 // https://github.com/zeyu2001/chess-ai
@@ -183,8 +184,11 @@ function evaluateBoard(game, move, prevSum, color) {
   return prevSum;
 }
 
-function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
+function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color, maze) {
   var children = game.moves({ verbose: true });
+  if (maze !== null){
+    children = children.filter((child) => validMoveInMaze(maze, child));
+  }
 
   // Sort moves randomly, so the same move isn't always picked on ties
   children.sort(function (a, b) {
@@ -214,7 +218,8 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
       beta,
       !isMaximizingPlayer,
       newSum,
-      color
+      color, 
+      maze
     );
 
     game.undo();
@@ -250,7 +255,7 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
   }
 }
 
-function getBestMove(game, color, currSum) {
+function getBestMove(game, color, currSum, maze) {
   var depth = 1;
   var [bestMove, bestMoveValue] = minimax(
     game,
@@ -259,17 +264,18 @@ function getBestMove(game, color, currSum) {
     Number.POSITIVE_INFINITY,
     true,
     currSum,
-    color
+    color,
+    maze
   );
   return [bestMove, bestMoveValue];
 }
 
-function makeBestMove(game, color) {
+function makeBestMove(game, color, maze) {
   var globalSum = 0;
   if (color === "b") {
-    var move = getBestMove(game, color, globalSum)[0];
+    var move = getBestMove(game, color, globalSum, maze)[0];
   } else {
-    var move = getBestMove(game, color, -globalSum)[0];
+    var move = getBestMove(game, color, -globalSum, maze)[0];
   }
   
   if (move === null) {
@@ -291,9 +297,9 @@ function makeBestMove(game, color) {
 //   });
 // }
 
-export function getBotMove(game) {
+export function getBotMove(game, maze) {
   let gameCopy = new Chess(game.fen());
-  let bMove = makeBestMove(gameCopy, gameCopy.turn());
+  let bMove = makeBestMove(gameCopy, gameCopy.turn(), maze);
   console.log("Bot move: ", bMove);
   return bMove;
 }
