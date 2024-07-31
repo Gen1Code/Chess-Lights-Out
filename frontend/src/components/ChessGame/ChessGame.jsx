@@ -98,12 +98,15 @@ export function ChessGame() {
     if (!playing) return true;
 
     let moves = game.moves({ verbose: true });
+    let movesRemaining = [];
+    console.log("valid moves", moves);
     moves.forEach((move) => {
-      if (!validMoveInMaze(maze, move)) {
-        moves.splice(moves.indexOf(move), 1);
+      if (validMoveInMaze(maze, move)) {
+        movesRemaining.push(move);
       }
     });
-    if (moves.length === 0) {
+    console.log("valid moves after maze", movesRemaining);
+    if (movesRemaining.length === 0) {
       return true;
     }
     return false;
@@ -176,6 +179,7 @@ export function ChessGame() {
 
   function styleForMaze(styles, borders) {
     //flip the maze for black player
+    console.log("borders before fliiping",borders)
     if (orientation === "black") {
       let newBorders = {};
       Object.keys(borders).forEach((squareIndex) => {
@@ -213,6 +217,7 @@ export function ChessGame() {
         styles[square].borderRight = "3px solid firebrick";
       }
     });
+    console.log("styles:", styles);
 
     return styles;
   }
@@ -235,7 +240,7 @@ export function ChessGame() {
   }
 
   function styleSquares(litupSquares, borders) {
-    console.log("styleSquares triggered");
+    // console.log("styleSquares triggered");
 
     let styles = {};
     let allSquares = new Set(SQUARES);
@@ -252,7 +257,7 @@ export function ChessGame() {
       styles = styleForMaze(styles, borders);
     }
 
-    console.log("styles", styles);
+    // console.log("styles", styles);
     setSquareStyles(styles);
   }
 
@@ -275,7 +280,8 @@ export function ChessGame() {
 
   // If something occurs that changes the board, style the squares
   useEffect(() => {
-    console.log("useEffect triggered with maze:", maze);
+    // console.log("useEffect triggered with maze:", maze);
+    console.log(maze);
     styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
   }, [maze, game, status]);
 

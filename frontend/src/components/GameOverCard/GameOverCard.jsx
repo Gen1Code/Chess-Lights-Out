@@ -15,7 +15,7 @@ export function GameOverCard({ message }) {
   }
 
   useEffect(() => {
-    console.log("status", status);
+    // console.log("status", status);
     setIsVisible(status !== "Playing");
   }, [status]);
 
