@@ -48,7 +48,8 @@ app.listen(PORT, () => {
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: process.env.NODE_ENV === "production" ? "https://gen1code.github.io" : "http://localhost:5173",
+    credentials: true
   }
 });
 
@@ -63,8 +64,12 @@ io.on("connection", async (socket) => {
     console.log("auth check");
     console.log("localUserID", localUserID);
     let result;
-    const userId = socket.handshake.auth.userId;
-    console.log("authUserID", userId);
+    // const userId = socket.handshake.auth.userId;
+    // console.log("authUserID", userId);
+    let cookie = socket.handshake.headers.cookie;
+    let cookieUserID = cookie ? cookie.split("=")[1] : null;
+    console.log("cookie", cookieUserID);
+
     // try {
     //   result = await client.sql`
     //       SELECT id FROM users WHERE id = ${userId};

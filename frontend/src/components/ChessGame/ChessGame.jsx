@@ -353,7 +353,7 @@ export function ChessGame() {
 
   function socketAuthCheck(){
     let user_id = localStorage.getItem("user_id");
-    socket.emit("auth check", {userId: user_id});
+    socket.emit("auth check", user_id);
     console.log("auth check");
   }
 
@@ -374,11 +374,12 @@ export function ChessGame() {
         <>
           <button onClick={forcegame}>Force Game</button>
           <button onClick={shiftMaze}>Shift Maze</button>
+          
+        </>
+      )}
           <button onClick={()=>{socket.connect();console.log("connected");}}>Connect</button>
           <button onClick={socketAuthCheck}>Auth Check</button>
           <button onClick={()=>{socket.disconnect();console.log("disconnected");}}>Disonnect</button>
-        </>
-      )}
     </div>
   );
 }
