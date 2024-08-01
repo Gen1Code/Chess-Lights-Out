@@ -3,44 +3,88 @@ import router from "./routes/root.js";
 import cookieParser from "cookie-parser";
 import userCookieMiddleware from "./middleware/cookies.js";
 import getCorsConfig from "./middleware/cors.js";
+import { Server } from "socket.io";
+import { createServer } from "http";
 
-const server = express();
+const app = express();
 
 // Middleware
-server.use(getCorsConfig());
+app.use(getCorsConfig());
 
-server.use((req, res, next) => {
+app.use((req, res, next) => {
   
   res.header("Access-Control-Allow-Credentials", "true");
   next();
 });
 
-server.use(cookieParser());
-server.use(userCookieMiddleware);
+app.use(cookieParser());
+app.use(userCookieMiddleware);
 
 //Status check
-server.get("/", (req, res) => {
+app.get("/", (req, res) => {
   res.json({ message: "Express" });
 });
 
 // Use Router
-server.use(router);
+app.use(router);
 
 // Catch all routes
-server.all("*", async (req, res) => {
+app.all("*", async (req, res) => {
   res.status(404).json({ success: false, message: "Not found.", code: 404 });
 });
 
 // Error handling
-server.use((err, req, res, next) => {
+app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ success: false, message: "Something went wrong." });
 });
 
 // Define the port and start listening
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-export default server;
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
+
+io.on("connection", async (socket) => {
+  console.log("a user has connected!");
+
+  socket.on("disconnect", () => {
+    console.log("a user has disconnected!");
+  });
+
+  socket.on("auth check", async (localUserID) => {
+    console.log("auth check");
+    console.log("localUserID", localUserID);
+    let result;
+    const userId = socket.handshake.auth.userId;
+    console.log("authUserID", userId);
+    // try {
+    //   result = await client.sql`
+    //       SELECT id FROM users WHERE id = ${userId};
+    //     `;
+    // } catch (e) {
+    //   console.error(e);
+    //   return;
+    // }
+    console.log("auth check", result);
+
+    socket.emit("auth check", result);
+  });
+  if (!socket.recovered) {
+    // TBD
+  }
+});
+
+io.listen(4000, () => {
+  console.log("Socket.io listening on *:4000");
+});
+
+
+export default app;

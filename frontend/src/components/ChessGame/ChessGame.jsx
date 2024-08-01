@@ -17,6 +17,7 @@ import {
   findKing,
   SQUARES,
 } from "@utils/ChessUtils";
+import { socket } from "@utils/socket";
 
 import "./ChessGame.css";
 
@@ -350,6 +351,12 @@ export function ChessGame() {
     }
   }, [status]);
 
+  function socketAuthCheck(){
+    let user_id = localStorage.getItem("user_id");
+    socket.emit("auth check", {userId: user_id});
+    console.log("auth check");
+  }
+
   return (
     <div className="chessboard">
       <Chessboard
@@ -367,6 +374,9 @@ export function ChessGame() {
         <>
           <button onClick={forcegame}>Force Game</button>
           <button onClick={shiftMaze}>Shift Maze</button>
+          <button onClick={()=>{socket.connect();console.log("connected");}}>Connect</button>
+          <button onClick={socketAuthCheck}>Auth Check</button>
+          <button onClick={()=>{socket.disconnect();console.log("disconnected");}}>Disonnect</button>
         </>
       )}
     </div>
