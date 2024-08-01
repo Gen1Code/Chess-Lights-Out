@@ -12,6 +12,7 @@ server.use(getCorsConfig());
 server.use((req, res, next) => {
   
   res.header("Access-Control-Allow-Credentials", "true");
+  console.log("CORS headers", res.getHeaders());
   next();
 });
 
