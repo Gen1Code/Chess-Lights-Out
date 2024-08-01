@@ -35,7 +35,7 @@ router.post("/", async (req, res) => {
     // Create a new user, if failed return an error
     let success = await createUser(userId, name);
     if (!success) {
-      return res.status(500).json({ message: "Failed to create user" });
+      return res.status(500).json({ success: false, message: "Failed to create user" });
     }
   } else {
     userId = req.headers.authorization.split(" ")[1];

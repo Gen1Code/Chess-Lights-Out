@@ -12,7 +12,6 @@ server.use(getCorsConfig());
 server.use((req, res, next) => {
   
   res.header("Access-Control-Allow-Credentials", "true");
-  console.log("CORS headers", res.getHeaders());
   next();
 });
 
@@ -30,6 +29,12 @@ server.use(router);
 // Catch all routes
 server.all("*", async (req, res) => {
   res.status(404).json({ success: false, message: "Not found.", code: 404 });
+});
+
+// Error handling
+server.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ success: false, message: "Something went wrong." });
 });
 
 // Define the port and start listening
