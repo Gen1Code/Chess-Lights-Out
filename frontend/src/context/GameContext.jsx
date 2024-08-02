@@ -17,20 +17,20 @@ export const GameProvider = ({ children }) => {
     });
     const [status, setStatus] = useState("Haven't started yet");
 
+    const userId = localStorage.getItem("user_id");
     const [ablyClient, _] = useState(
-      new Realtime({
-        authUrl: config.apiBaseUrl + "/auth/ably",
-        authHeaders: {
-            authorization: `Bearer ${localStorage.getItem("user_id")}`,
-        }
-      })
+        new Realtime({
+            authUrl: config.apiBaseUrl + "/auth/ably",
+            authHeaders: {
+                authorization: `Bearer ${userId ? userId : ""}`,
+            },
+        })
     );
 
     useEffect(() => {
         console.log("Ably client", ablyClient);
         return () => {
             if (ablyClient) ablyClient.close();
-            console.log("Ably client closed");
         };
     }, [ablyClient]);
 

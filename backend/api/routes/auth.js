@@ -20,6 +20,7 @@ async function createUser(user_id, name) {
 
 router.get("/ably", async (req, res) => {
     const tokenRequest = await getAuthTokenRequest(req.userId);
+    // console.log(tokenRequest);
     res.json(tokenRequest);
 });
 
