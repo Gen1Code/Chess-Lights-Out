@@ -28,6 +28,10 @@ export const GameProvider = ({ children }) => {
 
     useEffect(() => {
         console.log("Ably client", ablyClient);
+        return () => {
+            if (ablyClient) ablyClient.close();
+            console.log("Ably client closed");
+        };
     }, [ablyClient]);
 
     return (
