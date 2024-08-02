@@ -1,8 +1,8 @@
-import React, { useState, useContext} from 'react';
+import React, { useState, useContext, useEffect} from 'react';
 import { GameContext } from '@context/GameContext';
 import { api } from '@utils/api';
 export function PlayButton() {
-    const {settings, currentSettings, setCurrentSettings, status, setStatus } = useContext(GameContext);
+    const {settings, currentSettings, setCurrentSettings, status, setStatus, setTokenRequest } = useContext(GameContext);
     const [response, setResponse] = useState(null);
     
     const playing = status === "Playing";
@@ -23,6 +23,13 @@ export function PlayButton() {
             api("/game/resign", "POST", setResponse)
         }
     }
+
+    useEffect(() => {
+        console.log(response);
+        if(response && response.keyName){
+            setTokenRequest(response);
+        }
+    }, [response]);
 
   return (
     <> 
