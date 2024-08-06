@@ -329,7 +329,7 @@ function piecesMovements(game, maze) {
                                     ],
                                     piece: "p",
                                     color: turn,
-                                    flags: "nb"
+                                    flags: "nb",
                                 });
                             }
                         }
@@ -354,7 +354,8 @@ function piecesMovements(game, maze) {
                                 ],
                                 piece: "p",
                                 color: turn,
-                                flags: row === (turn === "w" ? 1 : 6) ? "cp" : "c",
+                                flags:
+                                    row === (turn === "w" ? 1 : 6) ? "cp" : "c",
                             });
                         }
                         if (
@@ -377,7 +378,8 @@ function piecesMovements(game, maze) {
                                 ],
                                 piece: "p",
                                 color: turn,
-                                flags: row === (turn === "w" ? 1 : 6) ? "cp" : "c",
+                                flags:
+                                    row === (turn === "w" ? 1 : 6) ? "cp" : "c",
                             });
                         }
                         break;
@@ -410,7 +412,8 @@ function piecesMovements(game, maze) {
                                     (board[nextRow][nextCol] === null ||
                                         board[nextRow][nextCol].color !== turn)
                                 ) {
-                                    let capture = board[nextRow][nextCol] !== null;
+                                    let capture =
+                                        board[nextRow][nextCol] !== null;
                                     moves.push({
                                         from: SQUARES[row * 8 + col],
                                         to: SQUARES[nextRow * 8 + nextCol],
@@ -458,7 +461,9 @@ function piecesMovements(game, maze) {
                                     piece: "n",
                                     color: turn,
                                     flags:
-                                        board[nextRow][nextCol] === null ? "n" : "c",
+                                        board[nextRow][nextCol] === null
+                                            ? "n"
+                                            : "c",
                                 });
                             }
                         }
@@ -494,7 +499,8 @@ function piecesMovements(game, maze) {
                                     (board[nextRow][nextCol] === null ||
                                         board[nextRow][nextCol].color !== turn)
                                 ) {
-                                  let capture = board[nextRow][nextCol] !== null;
+                                    let capture =
+                                        board[nextRow][nextCol] !== null;
 
                                     moves.push({
                                         from: SQUARES[row * 8 + col],
@@ -502,7 +508,6 @@ function piecesMovements(game, maze) {
                                         piece: "b",
                                         color: turn,
                                         flags: capture ? "c" : "n",
-
                                     });
 
                                     if (capture) {
@@ -559,7 +564,8 @@ function piecesMovements(game, maze) {
                                                 nextCol
                                             )))
                                 ) {
-                                  let capture = board[nextRow][nextCol] !== null;
+                                    let capture =
+                                        board[nextRow][nextCol] !== null;
 
                                     moves.push({
                                         from: SQUARES[row * 8 + col],
@@ -624,7 +630,9 @@ function piecesMovements(game, maze) {
                                     piece: "k",
                                     color: turn,
                                     flags:
-                                        board[nextRow][nextCol] === null ? "n" : "c",
+                                        board[nextRow][nextCol] === null
+                                            ? "n"
+                                            : "c",
                                 });
                             }
                         }
@@ -698,6 +706,29 @@ export function inCheckInMaze(game, maze) {
         }
     }
     return false;
+}
+
+export function attackingKingInMaze(game, maze) {
+    let attackers = [];
+
+    if (!game.inCheck()) {
+        return attackers;
+    }
+
+    let turn = game.turn();
+    let kingSquare = findKing(game, turn);
+
+    let fen = game.fen().split(" ");
+    fen[1] = turn === "w" ? "b" : "w";
+    let oppTurnGame = new Chess(fen.join(" "));
+
+    let moves = piecesMovements(oppTurnGame, maze);
+    for (let i = 0; i < moves.length; i++) {
+        if (moves[i].to === kingSquare) {
+            attackers.push(moves[i].from);
+        }
+    }
+    return attackers;
 }
 
 export function makeMoveInMaze(move, game) {

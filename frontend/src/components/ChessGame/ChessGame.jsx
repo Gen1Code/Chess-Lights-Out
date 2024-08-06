@@ -8,7 +8,7 @@ import {
     getRandomMaze,
     scramble,
     getMazeBorders,
-    validMoveInMaze,
+    attackingKingInMaze,
     possibleMoves,
     inCheckInMaze,
 } from "@utils/OriginShiftMaze";
@@ -22,7 +22,7 @@ import {
 
 import "./ChessGame.css";
 
-function getLitupSquares(game, orientation) {
+function getLitupSquares(game, maze, orientation) {
     // console.log("getLitupSquares triggered");
     //Make it your turn (done for moves function to work properly)
     if (game.turn() !== orientation[0]) {
@@ -31,7 +31,12 @@ function getLitupSquares(game, orientation) {
         game = new Chess(splitFen.join(" "));
     }
 
-    const moves = game.moves({ verbose: true });
+    let moves;
+    if (maze !== null) {
+        moves = possibleMoves(game, maze);
+    } else {
+        game.moves({ verbose: true });
+    }
     let squares = new Set();
     moves.forEach((move) => {
         squares.add(move.to);
@@ -59,9 +64,14 @@ function getLitupSquares(game, orientation) {
     });
 
     //If you are in check light up the checking pieces (change to .attackers() when new chess.js npm package is released)
-    if (game.inCheck()) {
+    if(maze !== null) {
+        let attackers = attackingKingInMaze(game, maze);
+        attackers.forEach((attacker) => {
+            squares.add(attacker);
+        });
+    }else if(game.inCheck()){
         let lastMove = game.pgn().split(" ").pop();
-        //second to last and third to last is the position moved to
+        // TODO: change from last piece moved to all pieces that can attack the king
         let checkingPiece =
             lastMove[lastMove.length - 3] + lastMove[lastMove.length - 2];
         squares.add(checkingPiece);
@@ -304,7 +314,11 @@ export function ChessGame() {
     useEffect(() => {
         // console.log("useEffect triggered with maze:", maze);
         // console.log(maze);
-        styleSquares(getLitupSquares(game, orientation), getMazeBorders(maze));
+        let realMaze = mazeIsOn ? maze : null;
+        styleSquares(
+            getLitupSquares(game, realMaze, orientation),
+            getMazeBorders(maze)
+        );
     }, [maze, game, status]);
 
     // if king is in check, style the square
@@ -328,7 +342,10 @@ export function ChessGame() {
                     let fen = game.fen().split(" ");
                     fen[1] = game.turn() === "w" ? "b" : "w";
                     let oppTurnGame = new Chess(fen.join(" "));
-                    if (inCheckInMaze(game, maze) || inCheckInMaze(oppTurnGame, maze)) {
+                    if (
+                        inCheckInMaze(game, maze) ||
+                        inCheckInMaze(oppTurnGame, maze)
+                    ) {
                         setStatus("Checkmate!");
                     } else {
                         setStatus("Stalemate!");
