@@ -76,6 +76,8 @@ export function ChessGame() {
     const [messages, updateMessages] = useState([]);
 
     const singlePlayer = currentSettings.mode === "Single";
+    const mazeIsOn = currentSettings.maze !== "Off";
+    const playing = status === "Playing";
 
     const [game, setGame] = useState(new Chess());
     const [orientation, setOrientation] = useState(
@@ -88,8 +90,6 @@ export function ChessGame() {
     const [checkStyle, setCheckStyle] = useState({});
 
     const turn = game.turn() === "w" ? "white" : "black";
-    const playing = status === "Playing";
-    const mazeIsOn = currentSettings.maze !== "Off";
     const inCheck = mazeIsOn
         ? inCheckInMaze(game, maze) && turn === orientation
         : game.inCheck() && turn === orientation;
@@ -170,23 +170,23 @@ export function ChessGame() {
         setMaze(scramble(maze, 400));
     }
 
-    function botMove(g = game) {
+    function botMove(g = game, m = maze) {
         // console.log("botMove triggered with:", orientation, turn, mazeIsOn);
         if (playing && singlePlayer) {
-            let mazeCopy = maze;
+            let mazeCopy = m;
             let gameCopy = new Chess();
 
             if (mazeIsOn) {
-                gameCopy.load(game.fen());
+                gameCopy.load(g.fen());
             } else {
                 mazeCopy = null;
-                gameCopy.loadPgn(game.pgn());
+                gameCopy.loadPgn(g.pgn());
             }
-            const move = getBotMove(g, mazeCopy);
+            const move = getBotMove(gameCopy, mazeCopy);
             if (!move) return;
 
             if (mazeIsOn) {
-                let fen = game.fen().split(" ");
+                let fen = g.fen().split(" ");
                 fen[1] = fen[1] === "w" ? "b" : "w";
                 gameCopy.load(fen.join(" "));
                 gameCopy.remove(move.from);
@@ -284,7 +284,7 @@ export function ChessGame() {
     // On Turn Change
     useEffect(() => {
         console.log("useEffect triggered with turn:", turn);
-        console.log("board", game.board());
+        // console.log("board", game.board());
         console.log(possibleMoves(game, maze));
 
         if (playing) {
@@ -358,7 +358,7 @@ export function ChessGame() {
 
             // if it's the computer's turn first, trigger a mov
             if (newOrientation === "black" && singlePlayer) {
-                botMove(newGame);
+                botMove(newGame, newMaze);
             }
         }
     }, [status]);
