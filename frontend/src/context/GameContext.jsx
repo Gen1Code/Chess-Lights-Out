@@ -6,12 +6,12 @@ export const GameContext = createContext();
 
 export const GameProvider = ({ children }) => {
     const [settings, setSettings] = useState({
-        mode: "Multi",
+        mode: "Single",
         lightsOut: false,
         maze: "Shift",
     });
     const [currentSettings, setCurrentSettings] = useState({
-        mode: "Multi",
+        mode: "Single",
         lightsOut: false,
         maze: "Shift",
     });

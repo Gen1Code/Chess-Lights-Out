@@ -9,6 +9,8 @@ import {
     scramble,
     getMazeBorders,
     validMoveInMaze,
+    possibleMoves,
+    inCheckInMaze
 } from "@utils/OriginShiftMaze";
 import {
     pawnSquareInFront,
@@ -19,10 +21,6 @@ import {
 } from "@utils/ChessUtils";
 
 import "./ChessGame.css";
-
-//Bug/Feature?
-//Check in Maze has side effects due to .moves() of chess.js
-// side effects are: checks through walls and "false" pins being created
 
 function getLitupSquares(game, orientation) {
     // console.log("getLitupSquares triggered");
@@ -91,42 +89,54 @@ export function ChessGame() {
 
     const turn = game.turn() === "w" ? "white" : "black";
     const playing = status === "Playing";
-    const inCheck = game.inCheck() && turn === orientation;
     const mazeIsOn = currentSettings.maze !== "Off";
+    const inCheck = mazeIsOn ? inCheckInMaze(game, maze) && turn === orientation : game.inCheck() && turn === orientation;
     const isGameOver = mazeIsOn
         ? detctGameOverMaze(game, maze)
         : game.isGameOver();
 
-    function detctGameOverMaze(game, maze) {
+    function detctGameOverMaze(game, maze) { //TODO Fix this to check all Locational of each piece instead od .moves from chess.js
         if (!playing) return true;
 
-        let moves = game.moves({ verbose: true });
-        let movesRemaining = [];
-        // console.log("valid moves", moves);
-        moves.forEach((move) => {
-            if (validMoveInMaze(maze, move)) {
-                movesRemaining.push(move);
-            }
-        });
-        // console.log("valid moves after maze", movesRemaining);
-        if (movesRemaining.length === 0) {
-            return true;
-        }
-        return false;
+        let moves = possibleMoves(game, maze);
+        return moves.length === 0;
     }
 
     function makeAMove(move) {
         const gameCopy = new Chess();
-        gameCopy.loadPgn(game.pgn());
 
-        console.log("Move made", move);
-        try {
-            gameCopy.move(move);
-        } catch (e) {
-            console.log("Invalid move", move);
-            console.error(e);
-            return;
+        if(mazeIsOn){
+            let validMove = false;
+            let moves = possibleMoves(game, maze);
+            for(let i = 0; i < moves.length; i++){
+                if(moves[i].from === move.from && moves[i].to === move.to){
+                    validMove = true;
+                    break;
+                }
+            }
+            console.log("Move:", move);
+            console.log("Valid move:", validMove);
+            if(!validMove){
+                return;
+            }
+            let fen = game.fen().split(" ");
+            fen[1] = fen[1] === "w" ? "b" : "w";
+            gameCopy.load(fen.join(" "));
+            gameCopy.remove(move.from);
+            gameCopy.put({ type: move.piece, color: move.color }, move.to);
+
+        }else{
+            gameCopy.loadPgn(game.pgn());
+
+            try{
+                gameCopy.move(move);
+            } catch(e){
+                console.log("Invalid move", move);
+                console.error(e);
+                return;
+            }
         }
+
         setGame(gameCopy);
     }
 
@@ -140,15 +150,6 @@ export function ChessGame() {
             piece: piece[1].toLowerCase(),
             promotion: "q", // always promote to a queen for simplicity
         };
-
-        // check if the move is legal
-        if (mazeIsOn) {
-            if (!validMoveInMaze(maze, move)) {
-                console.log("Invalid move in maze");
-                console.log("Move", move);
-                return;
-            }
-        }
 
         makeAMove(move);
     }
@@ -172,14 +173,26 @@ export function ChessGame() {
         // console.log("botMove triggered with:", orientation, turn, mazeIsOn);
         if (playing && singlePlayer) {
             let mazeCopy = maze;
-            if (!mazeIsOn) {
+            let gameCopy = new Chess();
+
+            if (mazeIsOn) {
+                gameCopy.load(game.fen());
+            }else{
                 mazeCopy = null;
+                gameCopy.loadPgn(game.pgn());
             }
             const move = getBotMove(g, mazeCopy);
             if (!move) return;
-            let gameCopy = new Chess();
-            gameCopy.loadPgn(g.pgn());
-            gameCopy.move(move);
+
+            if(mazeIsOn){
+                let fen = game.fen().split(" ");
+                fen[1] = fen[1] === "w" ? "b" : "w";
+                gameCopy.load(fen.join(" "));
+                gameCopy.remove(move.from);
+                gameCopy.put({ type: move.piece, color: move.color }, move.to);
+            }else{
+                gameCopy.move(move);
+            }
             setGame(gameCopy);
         }
     }
@@ -270,6 +283,8 @@ export function ChessGame() {
     // On Turn Change
     useEffect(() => {
         console.log("useEffect triggered with turn:", turn);
+        console.log("board", game.board());
+        console.log(possibleMoves(game, maze));
 
         if (playing) {
             // if maze is in shift, make shifts
@@ -307,14 +322,9 @@ export function ChessGame() {
         if (isGameOver) {
             console.log("Game over");
             if (mazeIsOn) {
-                let moves = game.moves({ verbose: true });
-                moves.forEach((move) => {
-                    if (!validMoveInMaze(maze, move)) {
-                        moves.splice(moves.indexOf(move), 1);
-                    }
-                });
+                let moves = possibleMoves(game, maze);
                 if (moves.length === 0) {
-                    if (game.inCheck()) {
+                    if (inCheckInMaze(game, maze)) {
                         setStatus("Checkmate!");
                     } else {
                         setStatus("Stalemate!");
