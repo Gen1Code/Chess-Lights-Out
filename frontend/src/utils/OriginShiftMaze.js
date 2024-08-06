@@ -308,7 +308,7 @@ function piecesMovements(game, maze) {
                                 piece: "p",
                                 color: turn,
                                 flags:
-                                    row === (turn === "w" ? 6 : 1) ? "np" : "n",
+                                    row === (turn === "w" ? 1 : 6) ? "np" : "n",
                             });
 
                             if (
@@ -354,7 +354,7 @@ function piecesMovements(game, maze) {
                                 ],
                                 piece: "p",
                                 color: turn,
-                                flags: row === (turn === "w" ? 6 : 1) ? "cp" : "c",
+                                flags: row === (turn === "w" ? 1 : 6) ? "cp" : "c",
                             });
                         }
                         if (
@@ -377,7 +377,7 @@ function piecesMovements(game, maze) {
                                 ],
                                 piece: "p",
                                 color: turn,
-                                flags: row === (turn === "w" ? 6 : 1) ? "cp" : "c",
+                                flags: row === (turn === "w" ? 1 : 6) ? "cp" : "c",
                             });
                         }
                         break;

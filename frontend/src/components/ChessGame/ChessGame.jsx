@@ -10,7 +10,7 @@ import {
     getMazeBorders,
     validMoveInMaze,
     possibleMoves,
-    inCheckInMaze
+    inCheckInMaze,
 } from "@utils/OriginShiftMaze";
 import {
     pawnSquareInFront,
@@ -90,12 +90,14 @@ export function ChessGame() {
     const turn = game.turn() === "w" ? "white" : "black";
     const playing = status === "Playing";
     const mazeIsOn = currentSettings.maze !== "Off";
-    const inCheck = mazeIsOn ? inCheckInMaze(game, maze) && turn === orientation : game.inCheck() && turn === orientation;
+    const inCheck = mazeIsOn
+        ? inCheckInMaze(game, maze) && turn === orientation
+        : game.inCheck() && turn === orientation;
     const isGameOver = mazeIsOn
         ? detctGameOverMaze(game, maze)
         : game.isGameOver();
 
-    function detctGameOverMaze(game, maze) { //TODO Fix this to check all Locational of each piece instead od .moves from chess.js
+    function detctGameOverMaze(game, maze) {
         if (!playing) return true;
 
         let moves = possibleMoves(game, maze);
@@ -105,18 +107,18 @@ export function ChessGame() {
     function makeAMove(move) {
         const gameCopy = new Chess();
 
-        if(mazeIsOn){
+        if (mazeIsOn) {
             let validMove = false;
             let moves = possibleMoves(game, maze);
-            for(let i = 0; i < moves.length; i++){
-                if(moves[i].from === move.from && moves[i].to === move.to){
+            for (let i = 0; i < moves.length; i++) {
+                if (moves[i].from === move.from && moves[i].to === move.to) {
                     validMove = true;
                     break;
                 }
             }
             console.log("Move:", move);
             console.log("Valid move:", validMove);
-            if(!validMove){
+            if (!validMove) {
                 return;
             }
             let fen = game.fen().split(" ");
@@ -124,13 +126,12 @@ export function ChessGame() {
             gameCopy.load(fen.join(" "));
             gameCopy.remove(move.from);
             gameCopy.put({ type: move.piece, color: move.color }, move.to);
-
-        }else{
+        } else {
             gameCopy.loadPgn(game.pgn());
 
-            try{
+            try {
                 gameCopy.move(move);
-            } catch(e){
+            } catch (e) {
                 console.log("Invalid move", move);
                 console.error(e);
                 return;
@@ -177,20 +178,20 @@ export function ChessGame() {
 
             if (mazeIsOn) {
                 gameCopy.load(game.fen());
-            }else{
+            } else {
                 mazeCopy = null;
                 gameCopy.loadPgn(game.pgn());
             }
             const move = getBotMove(g, mazeCopy);
             if (!move) return;
 
-            if(mazeIsOn){
+            if (mazeIsOn) {
                 let fen = game.fen().split(" ");
                 fen[1] = fen[1] === "w" ? "b" : "w";
                 gameCopy.load(fen.join(" "));
                 gameCopy.remove(move.from);
                 gameCopy.put({ type: move.piece, color: move.color }, move.to);
-            }else{
+            } else {
                 gameCopy.move(move);
             }
             setGame(gameCopy);
@@ -293,7 +294,7 @@ export function ChessGame() {
             }
 
             // if it's the computer's turn, make a move
-            if (turn !== orientation && singlePlayer) {
+            if (turn !== orientation && singlePlayer && !isGameOver) {
                 botMove();
             }
         }
@@ -324,7 +325,10 @@ export function ChessGame() {
             if (mazeIsOn) {
                 let moves = possibleMoves(game, maze);
                 if (moves.length === 0) {
-                    if (inCheckInMaze(game, maze)) {
+                    let fen = game.fen().split(" ");
+                    fen[1] = game.turn() === "w" ? "b" : "w";
+                    let oppTurnGame = new Chess(fen.join(" "));
+                    if (inCheckInMaze(game, maze) || inCheckInMaze(oppTurnGame, maze)) {
                         setStatus("Checkmate!");
                     } else {
                         setStatus("Stalemate!");

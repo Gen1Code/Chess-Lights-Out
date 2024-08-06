@@ -259,12 +259,14 @@ function minimax(
             maze
         );
         if (maze != null) {
+            
             game.remove(currMove.to);
             if (captured) {
+                console.log("captured Piece", captured);
                 game.put(captured, currMove.to);
             }
             game.put(
-                { type: currMove.piece, color: game.turn() },
+                { type: currMove.piece, color: currMove.color },
                 currMove.from
             );
             let fen = game.fen().split(" ");
