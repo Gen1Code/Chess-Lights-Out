@@ -80,174 +80,6 @@ export function getMazeBorders(maze) {
     return borders;
 }
 
-function notBlockedByMaze(maze, source, target, piece) {
-    if (piece === "n") {
-        return true;
-    }
-
-    let tree = maze.tree;
-    let sourceIndex = SQUARES.indexOf(source);
-    let targetIndex = SQUARES.indexOf(target);
-
-    if (piece === "k" || piece === "q" || piece === "p") {
-        //Detect if straight or diagonal movement
-        let rankMovement = source[0] !== target[0];
-        let fileMovement = source[1] !== target[1];
-
-        if (rankMovement && fileMovement) {
-            piece = "b";
-        } else {
-            piece = "r";
-        }
-    }
-
-    //Straight Movement
-    if (piece === "r") {
-        let rankMovement = source[0] === target[0];
-        let step = rankMovement ? 8 : 1;
-        step = sourceIndex < targetIndex ? step : -step;
-
-        let current = sourceIndex;
-        let next;
-
-        while (current !== targetIndex) {
-            next = current + step;
-            if (
-                tree[Math.floor(current / 8)][current % 8] !== next &&
-                tree[Math.floor(next / 8)][next % 8] !== current
-            ) {
-                return false;
-            }
-            current = next;
-        }
-        return true;
-    } else if (piece === "b") {
-        // Diagonal Movement
-        let goingDown = sourceIndex < targetIndex;
-        let goingRight = sourceIndex % 8 < targetIndex % 8;
-
-        let step = goingDown ? 9 : -7;
-        step = goingRight ? step : step - 2;
-
-        let midStep1 = goingDown ? 8 : -8;
-        let midStep2 = goingRight ? 1 : -1;
-
-        let current = sourceIndex;
-        let next;
-
-        while (current !== targetIndex) {
-            next = current + step;
-            let option1 = current + midStep1;
-            let option2 = current + midStep2;
-
-            if (
-                ((tree[Math.floor(current / 8)][current % 8] !== option1 &&
-                    tree[Math.floor(option1 / 8)][option1 % 8] !== current) ||
-                    (tree[Math.floor(option1 / 8)][option1 % 8] !== next &&
-                        tree[Math.floor(next / 8)][next % 8] !== option1)) &&
-                ((tree[Math.floor(current / 8)][current % 8] !== option2 &&
-                    tree[Math.floor(option2 / 8)][option2 % 8] !== current) ||
-                    (tree[Math.floor(option2 / 8)][option2 % 8] !== next &&
-                        tree[Math.floor(next / 8)][next % 8] !== option2))
-            ) {
-                return false;
-            }
-            current = next;
-        }
-        return true;
-    }
-    console.error("Invalid piece type");
-    return true;
-}
-
-export function validMoveInMaze(game, maze, move) {
-    let piece = move.piece;
-    let source = move.from;
-    let target = move.to;
-
-    let moves = game.moves({ verbose: true });
-    let valid = false;
-    for (let i = 0; i < moves.length; i++) {
-        if (moves[i].from === source && moves[i].to === target) {
-            valid = true;
-            break;
-        }
-    }
-
-    console.log("valid", valid);
-
-    if (!valid) {
-        let board = game.board();
-        let turn = game.turn();
-        //king moves
-        if (piece === "k") {
-            //TODO: Pawn Exceptions
-            for (let row = 0; row < board.length; row++) {
-                for (let col = 0; col < board[row].length; col++) {
-                    if (board[row][col] && board[row][col].color !== turn) {
-                        let moves = getLocationalMoves(board, row, col);
-                        let source = SQUARES[row * 8 + col];
-                        let type = board[row][col].type;
-                        if (
-                            moves.includes(target) &&
-                            notBlockedByMaze(maze, source, target, type)
-                        ) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        //Fake check
-        if (game.inCheck()) {
-            let kingSquare = findKing(game, turn);
-            for (let row = 0; row < board.length; row++) {
-                for (let col = 0; col < board[row].length; col++) {
-                    if (board[row][col] && board[row][col].color !== turn) {
-                        let moves = getLocationalMoves(board, row, col);
-                        let source = SQUARES[row * 8 + col];
-                        let type = board[row][col].type;
-                        if (
-                            moves.includes(kingSquare) &&
-                            notBlockedByMaze(maze, source, kingSquare, type)
-                        ) {
-                            return false;
-                        }
-                    }
-                }
-            }
-            let newPossibleMoves = getLocationalMoves(
-                board,
-                source[0],
-                source[1]
-            );
-            if (!newPossibleMoves.includes(target)) {
-                return false;
-            }
-        }
-
-        //pins, only bishops, rooks, queens can pin pieces, but any piece can be pinned (except kings)
-        // for (let row = 0; row < board.length; row++) {
-        //   for (let col = 0; col < board[row].length; col++) {
-        //     if (board[row][col] && board[row][col].color !== turn) {
-        //       let moves = getLocationalMoves(board, row, col);
-        //       let source = SQUARES[row * 8 + col];
-        //       let type = board[row][col].type;
-        //       if (moves.includes(target) && notBlockedByMaze(maze, source, target, type)) {
-        //         game.remove(source);
-        //         if (game.inCheck()) {
-        //           return false;
-        //         }
-        //         game.put(board[row][col], source);
-        //       }
-        //     }
-        //   }
-        //
-    }
-
-    return notBlockedByMaze(maze, source, target, piece);
-}
-
 function canDiagonal(tree, sRow, sCol, tRow, tCol) {
     let sIndex = sRow * 8 + sCol;
     let tIndex = tRow * 8 + tCol;
@@ -665,12 +497,13 @@ export function possibleMoves(game, maze) {
         let captured = gameCopy.get(moves[i].to);
 
         //do the move
-        gameCopy.put({ type: moves[i].piece, color: turn }, moves[i].to);
         gameCopy.remove(moves[i].from);
+        gameCopy.put({ type: moves[i].piece, color: turn }, moves[i].to);
 
         //check if in check
+        // console.log("Checking for check in maze", moves[i]);
         if (inCheckInMaze(gameCopy, maze)) {
-            console.log("Filtered out move", moves[i]);
+            // console.log("Filtered out move", moves[i]);
         } else {
             filteredMoves.push(moves[i]);
         }
