@@ -199,7 +199,7 @@ function minimax(
     var children;
     if (maze !== null) {
         children = possibleMoves(game, maze);
-        console.log("children", children);
+        // console.log("children", children);
     } else {
         children = game.moves({ verbose: true });
     }
@@ -226,8 +226,7 @@ function minimax(
         // Note: in our case, the 'children' are simply modified game states
         var currPrettyMove;
         if (maze != null) {
-            console.log("currMove", currMove);
-            console.log("game.fen()", game.fen());
+            // console.log("currMove", currMove);
             let fen = game.fen().split(" ");
             fen[1] = fen[1] === "w" ? "b" : "w";
             game.load(fen.join(" "));
@@ -242,7 +241,6 @@ function minimax(
                 );
             }
             currPrettyMove = currMove;
-            console.log("currPrettyMove", currPrettyMove);
         } else {
             currPrettyMove = game.move(currMove);
         }
@@ -259,16 +257,20 @@ function minimax(
             maze
         );
         if (maze != null) {
-            
             game.remove(currMove.to);
             if (captured) {
-                console.log("captured Piece", captured);
+                // console.log("captured Piece", captured);
                 game.put(captured, currMove.to);
             }
-            game.put(
-                { type: currMove.piece, color: currMove.color },
-                currMove.from
-            );
+            if (currMove.flags.includes("p")) {
+                game.put({ type: "p", color: currMove.color }, currMove.from);
+            } else {
+                game.put(
+                    { type: currMove.piece, color: currMove.color },
+                    currMove.from
+                );
+            }
+
             let fen = game.fen().split(" ");
             fen[1] = fen[1] === "w" ? "b" : "w";
             game.load(fen.join(" "));

@@ -64,12 +64,12 @@ function getLitupSquares(game, maze, orientation) {
     });
 
     //If you are in check light up the checking pieces (change to .attackers() when new chess.js npm package is released)
-    if(maze !== null) {
+    if (maze !== null) {
         let attackers = attackingKingInMaze(game, maze);
         attackers.forEach((attacker) => {
             squares.add(attacker);
         });
-    }else if(game.inCheck()){
+    } else if (game.inCheck()) {
         let lastMove = game.pgn().split(" ").pop();
         // TODO: change from last piece moved to all pieces that can attack the king
         let checkingPiece =
@@ -111,7 +111,7 @@ export function ChessGame() {
         if (!playing) return true;
 
         let moves = possibleMoves(game, maze);
-        return moves.length === 0;
+        return moves.length === 0 || game.isInsufficientMaterial();
     }
 
     function makeAMove(move) {
@@ -159,7 +159,7 @@ export function ChessGame() {
             from: sourceSquare,
             to: targetSquare,
             piece: piece[1].toLowerCase(),
-            promotion: "q", // always promote to a queen for simplicity
+            promotion: piece[1].toLowerCase(), // always promote to a queen for simplicity
         };
 
         makeAMove(move);
@@ -167,14 +167,17 @@ export function ChessGame() {
 
     //Dev testing functions (remove when done)
     function forcegame() {
-        let fen = "k7/6Q1/3N4/8/3b3q/8/8/5K2 ";
+        // let fen = "k7/6Q1/3N4/8/3b3q/8/8/5K2 ";
+        let fen = "8/PPPK4/8/8/8/8/4kppp/8 ";
         if (orientation === "white") {
             fen += "w";
         } else {
             fen += "b";
         }
-        fen += " - - 0 1";
-        setGame(new Chess(fen));
+        fen += " - - 0 40";
+        let g = new Chess();
+        g.load(fen);
+        setGame(g);
     }
     function shiftMaze() {
         setMaze(scramble(maze, 400));
@@ -200,7 +203,17 @@ export function ChessGame() {
                 fen[1] = fen[1] === "w" ? "b" : "w";
                 gameCopy.load(fen.join(" "));
                 gameCopy.remove(move.from);
-                gameCopy.put({ type: move.piece, color: move.color }, move.to);
+                if (move.flags.includes("p")) {
+                    gameCopy.put(
+                        { type: move.promotion, color: move.color },
+                        move.to
+                    );
+                } else {
+                    gameCopy.put(
+                        { type: move.piece, color: move.color },
+                        move.to
+                    );
+                }
             } else {
                 gameCopy.move(move);
             }
@@ -295,12 +308,12 @@ export function ChessGame() {
     useEffect(() => {
         console.log("useEffect triggered with turn:", turn);
         // console.log("board", game.board());
-        console.log(possibleMoves(game, maze));
+        // console.log(possibleMoves(game, maze));
 
         if (playing) {
             // if maze is in shift, make shifts
             if (currentSettings.maze === "Shift") {
-                setMaze(scramble(maze, 2));
+                setMaze(scramble(maze, 10));
             }
 
             // if it's the computer's turn, make a move
