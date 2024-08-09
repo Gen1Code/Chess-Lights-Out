@@ -581,3 +581,66 @@ export function makeMoveInMaze(move, game) {
     }
     return captured;
 }
+
+export function styleForMaze(styles, borders, orientation) {
+    //flip the maze for black player
+    if (orientation === "black") {
+        let newBorders = {};
+        Object.keys(borders).forEach((squareIndex) => {
+            newBorders[squareIndex] = new Set();
+            if (borders[squareIndex].has("top")) {
+                newBorders[squareIndex].add("bottom");
+            }
+            if (borders[squareIndex].has("bottom")) {
+                newBorders[squareIndex].add("top");
+            }
+            if (borders[squareIndex].has("left")) {
+                newBorders[squareIndex].add("right");
+            }
+            if (borders[squareIndex].has("right")) {
+                newBorders[squareIndex].add("left");
+            }
+        });
+        borders = newBorders;
+    }
+
+    Object.keys(borders).forEach((squareIndex) => {
+        let square = SQUARES[squareIndex];
+        styles[square].boxSizing = "border-box";
+
+        if (borders[squareIndex].has("top")) {
+            styles[square].borderTop = "3px solid firebrick";
+        }
+        if (borders[squareIndex].has("bottom")) {
+            styles[square].borderBottom = "3px solid firebrick";
+        }
+        if (borders[squareIndex].has("left")) {
+            styles[square].borderLeft = "3px solid firebrick";
+        }
+        if (borders[squareIndex].has("right")) {
+            styles[square].borderRight = "3px solid firebrick";
+        }
+    });
+    // console.log("styles:", styles);
+
+    return styles;
+}
+
+export function mazeGameOverMessage(game, maze) {
+    let moves = possibleMoves(game, maze);
+    if (moves.length === 0) {
+        let fen = game.fen().split(" ");
+        fen[1] = game.turn() === "w" ? "b" : "w";
+        let oppTurnGame = new Chess(fen.join(" "));
+        if (inCheckInMaze(game, maze) || inCheckInMaze(oppTurnGame, maze)) {
+            return "Checkmate!";
+        } else {
+            return "Stalemate!";
+        }
+    }else if(game.isInsufficientMaterial()){
+        return "Insufficient Material!";
+    }else {
+      console.error("Game over but no reason found");
+      return "Game Over!";
+    }
+}
