@@ -24,7 +24,6 @@ router.get("/ably", async (req, res) => {
     res.json(tokenRequest);
 });
 
-// TODO: proper name getting
 router.post("/", async (req, res) => {
     if (req.cookies.user_id)
         return res.json({
@@ -36,8 +35,8 @@ router.post("/", async (req, res) => {
     // If the user isnt authenticated, create a new user
     if (!req.headers.authorization) {
         userId = uuidv4();
-        const name = req.body;
-        console.log(name);
+        const name = req.body.name;
+        console.log("Creating new user with name: ", name);
         // Create a new user, if failed return an error
         let success = await createUser(userId, name);
         if (!success) {
@@ -46,6 +45,7 @@ router.post("/", async (req, res) => {
                 .json({ success: false, message: "Failed to create user" });
         }
     } else {
+        // If the user is authenticated, get the user id from the token
         userId = req.headers.authorization.split(" ")[1];
     }
 

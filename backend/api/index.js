@@ -18,6 +18,8 @@ app.use((req, res, next) => {
 app.use(cookieParser());
 app.use(userCookieMiddleware);
 
+app.use(express.json())
+
 //Status check
 app.get("/", (req, res) => {
   res.json({ message: "Express" });
