@@ -46,8 +46,6 @@ export function ChessGame() {
         : game.isGameOver();
 
     function detctGameOverMaze(game, maze) {
-        if (!playing) return true;
-
         let moves = possibleMoves(game, maze);
         return moves.length === 0 || game.isInsufficientMaterial();
     }

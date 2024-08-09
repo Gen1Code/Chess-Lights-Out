@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api } from "@utils/api";
+import { apiSetsReponse } from "@utils/api";
 
 export function ApiRequest({method, path, postData}) {
   const [response, setResponse] = useState(null);
@@ -7,7 +7,7 @@ export function ApiRequest({method, path, postData}) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    api(path, method, postData, setResponse);
+    apiSetsReponse(path, method, postData, setResponse);
   };
 
   return (

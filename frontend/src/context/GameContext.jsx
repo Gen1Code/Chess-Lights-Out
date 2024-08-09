@@ -17,7 +17,9 @@ export const GameProvider = ({ children }) => {
     });
     const [status, setStatus] = useState("Haven't started yet");
 
-    const userId = localStorage.getItem("user_id");
+    const [userId, setUserId] = useState(localStorage.getItem("user_id"));
+    const [userName, setUserName] = useState(localStorage.getItem("user_name"));
+
     const [ablyClient, _] = useState(
         new Realtime({
             authUrl: config.apiBaseUrl + "/auth/ably",
@@ -43,7 +45,11 @@ export const GameProvider = ({ children }) => {
                 setCurrentSettings,
                 status,
                 setStatus,
-                ablyClient
+                ablyClient,
+                userName,
+                setUserName,
+                userId,
+                setUserId,
             }}
         >
             {children}
