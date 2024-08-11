@@ -1,4 +1,5 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
+import { api } from "../utils/api";
 
 export const GameContext = createContext();
 
@@ -17,6 +18,19 @@ export const GameProvider = ({ children }) => {
 
     const [userId, setUserId] = useState(localStorage.getItem("user_id"));
     const [userName, setUserName] = useState(localStorage.getItem("user_name"));
+
+    useEffect(() => {
+        async function localId() {
+            if (!userId) {
+                let resp = await api("/auth/");
+                if (resp && resp.user_id) {
+                    localStorage.setItem("user_id", resp.user_id);
+                    setUserId(resp.user_id);
+                }
+            }
+        }
+        localId();
+    }, []);
 
     return (
         <GameContext.Provider

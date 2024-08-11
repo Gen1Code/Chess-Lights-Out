@@ -25,6 +25,15 @@ router.get("/ably", async (req, res) => {
     res.json(tokenRequest);
 });
 
+router.get("/", async (req, res) => {
+    if (req.cookies.user_id) {
+        return res.json({ user_id: req.cookies.user_id });
+    }else if (req.headers.authorization) {
+        return res.json({ user_id: req.headers.authorization.split(" ")[1] });
+    }
+    res.json({ message: "No user_id Provided" });
+});
+
 router.post("/", async (req, res) => {
     if (req.cookies.user_id)
         return res.json({

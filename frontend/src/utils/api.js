@@ -18,9 +18,6 @@ export async function apiSetsReponse(path, method = "GET", postData = null, setR
         const result = await res.json();
         setResponse(result);
 
-        if (path === "/auth/" && result.user_id) {
-            localStorage.setItem("user_id", result.user_id);
-        }
     } catch (error) {
         console.error("Error during fetch:", error);
     }

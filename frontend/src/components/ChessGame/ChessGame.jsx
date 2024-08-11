@@ -24,7 +24,13 @@ export function ChessGame() {
         useContext(GameContext);
     
     const client = useAbly();
-    client.authorize()
+    if(client === "null"){
+        console.log("Ably client is null");
+    }else{
+        client.connection.on("connected", () => {
+            console.log("Connected to Ably");
+        });
+    }
 
     const singlePlayer = currentSettings.mode === "Single";
     const mazeIsOn = currentSettings.maze !== "Off";
