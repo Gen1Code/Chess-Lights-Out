@@ -97,7 +97,7 @@ router.post("/play", async (req, res) => {
         createGame(gameId, req.userId, color, settings);
 
         // Return the game id and color to the user
-        res.json({ message: "looking For a game", gameId: gameId, color: color });
+        res.json({ message: "Looking For a Game", gameId: gameId, color: color });
     }
 });
 

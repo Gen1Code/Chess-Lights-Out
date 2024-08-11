@@ -20,13 +20,12 @@ import "./ChessGame.css";
 import { useAbly } from "ably/react";
 
 export function ChessGame() {
-    const { currentSettings, status, setStatus } =
-        useContext(GameContext);
-    
+    const { currentSettings, status, setStatus } = useContext(GameContext);
+
     const client = useAbly();
-    if(client === "null"){
+    if (client === "null") {
         console.log("Ably client is null");
-    }else{
+    } else {
         client.connection.on("connected", () => {
             console.log("Connected to Ably");
         });
@@ -259,8 +258,6 @@ export function ChessGame() {
             }
         }
     }, [status]);
-
-
 
     return (
         <div className="chessboard">
