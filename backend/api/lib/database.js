@@ -26,10 +26,13 @@ async function setupDatabase() {
     const createGamesTable = `
         CREATE TABLE IF NOT EXISTS games (
           id SERIAL PRIMARY KEY,
+          game_id UUID UNIQUE NOT NULL,
           white_player UUID REFERENCES users(user_id) ON DELETE SET NULL,
           black_player UUID REFERENCES users(user_id) ON DELETE SET NULL,
           moves TEXT,
-          status VARCHAR(60) NOT NULL DEFAULT 'ongoing',
+          status VARCHAR(60) NOT NULL DEFAULT 'not started',
+          lights_out BOOLEAN NOT NULL DEFAULT FALSE,
+          maze VARCHAR(10) NOT NULL DEFAULT 'Off',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );`;
 

@@ -5,10 +5,10 @@ import { v4 as uuidv4 } from "uuid";
 
 const router = express.Router();
 
-async function createUser(user_id, name) {
+async function createUser(userId, name) {
     try {
         await db.query(`INSERT INTO users (user_id, name) VALUES ($1, $2)`, [
-            user_id,
+            userId,
             name,
         ]);
         return true;

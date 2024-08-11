@@ -51,7 +51,7 @@ export function consumeQueue(queueName) {
                     (msg) => {
                         if (msg !== null) {
                             clearTimeout(timer);
-                            const messageContent = msg.content.toString();
+                            const messageContent = JSON.parse(msg.content.toString());
                             channel.ack(msg);
                             channel.close(() => {
                                 connection.close();
@@ -73,8 +73,7 @@ export async function getMessageFromQueue(queueName) {
     try {
         const message = await consumeQueue(queueName);
         if (message !== null) {
-            console.log('Received message:', message);
-            return message
+            return message.messages[0]
         } else {
             console.log('No message received within the timeout period.');
             return null
