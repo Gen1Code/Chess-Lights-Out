@@ -1,14 +1,24 @@
 import express from "express";
+import dotenv from "dotenv";
 import { publish, getMessageFromQueue } from "../lib/pubsub.js";
 
+dotenv.config();
 const router = express.Router();
 
-let queueNames = ["7lsHZQ:maze-static-normal"];
+let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 
 router.post("/play", async (req, res) => {
     console.log("settings", req.body);
+    let mazeIsOn = req.body.maze !== "Off";
+    let lightsOutIsOn = req.body.lightsOut;
 
-    const messages = await getMessageFromQueue(queueNames[0]);
+    let queueName =
+        queuePrefix +
+        (mazeIsOn ? "maze" : "normal") +
+        "-" +
+        (lightsOutIsOn ? "lightsout" : "normal");
+
+    const messages = await getMessageFromQueue(queueName);
 
     console.log("messages", messages);
     if (messages !== null) {
@@ -16,10 +26,9 @@ router.post("/play", async (req, res) => {
     } else {
         console.log("publishing settings");
         // Publish the settings to the queue (temp)
-        publish(queueNames[0], 'settings', JSON.stringify(req.body));
+        publish(queueName, "settings", JSON.stringify(req.body));
         res.json({ message: "looking For a game" });
     }
-
 });
 
 export default router;
