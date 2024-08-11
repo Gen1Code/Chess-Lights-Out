@@ -12,13 +12,14 @@ export async function publish(channelName, event, message) {
 }
 
 export async function getAuthTokenRequest(userId) {
-    const ably = new Ably.Rest({ key: process.env.ABLY_API_KEY });
+    const ably = new Ably.Realtime(process.env.ABLY_API_KEY);
     const capability = { "*": ["subscribe"] };
     const tokenParams = {
         clientId: userId,
         capability: JSON.stringify(capability),
     };
     const tokenRequest = await ably.auth.createTokenRequest(tokenParams);
+    ably.close();
     return tokenRequest;
 }
 

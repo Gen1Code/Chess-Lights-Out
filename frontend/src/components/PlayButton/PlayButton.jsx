@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect} from 'react';
 import { GameContext } from '@context/GameContext';
 import { apiSetsReponse } from '@utils/api';
 export function PlayButton() {
-    const {settings, currentSettings, setCurrentSettings, status, setStatus, setTokenRequest } = useContext(GameContext);
+    const {settings, currentSettings, setCurrentSettings, status, setStatus } = useContext(GameContext);
     const [response, setResponse] = useState(null);
     
     const playing = status === "Playing";
@@ -26,9 +26,7 @@ export function PlayButton() {
 
     useEffect(() => {
         console.log(response);
-        if(response && response.keyName){
-            setTokenRequest(response);
-        }
+        
     }, [response]);
 
   return (

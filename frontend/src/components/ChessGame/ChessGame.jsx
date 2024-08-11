@@ -17,11 +17,14 @@ import { styleForLightsOut, getLitupSquares } from "@utils/LightsOutUtils";
 import { gameOverMessage, findKing, SQUARES } from "@utils/ChessUtils";
 
 import "./ChessGame.css";
+import { useAbly } from "ably/react";
 
 export function ChessGame() {
-    const { currentSettings, status, setStatus, ablyClient } =
+    const { currentSettings, status, setStatus } =
         useContext(GameContext);
-    const [messages, updateMessages] = useState([]);
+    
+    const client = useAbly();
+    client.authorize()
 
     const singlePlayer = currentSettings.mode === "Single";
     const mazeIsOn = currentSettings.maze !== "Off";
@@ -250,6 +253,8 @@ export function ChessGame() {
             }
         }
     }, [status]);
+
+
 
     return (
         <div className="chessboard">

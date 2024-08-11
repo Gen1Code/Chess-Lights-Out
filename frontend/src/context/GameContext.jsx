@@ -1,6 +1,4 @@
-import React, { createContext, useEffect, useState } from "react";
-import { Realtime } from "ably";
-import config from "@config";
+import React, { createContext, useState } from "react";
 
 export const GameContext = createContext();
 
@@ -20,22 +18,6 @@ export const GameProvider = ({ children }) => {
     const [userId, setUserId] = useState(localStorage.getItem("user_id"));
     const [userName, setUserName] = useState(localStorage.getItem("user_name"));
 
-    const [ablyClient, _] = useState(
-        new Realtime({
-            authUrl: config.apiBaseUrl + "/auth/ably",
-            authHeaders: {
-                authorization: `Bearer ${userId ? userId : ""}`,
-            },
-        })
-    );
-
-    useEffect(() => {
-        console.log("Ably client", ablyClient);
-        return () => {
-            if (ablyClient) ablyClient.close();
-        };
-    }, [ablyClient]);
-
     return (
         <GameContext.Provider
             value={{
@@ -45,7 +27,6 @@ export const GameProvider = ({ children }) => {
                 setCurrentSettings,
                 status,
                 setStatus,
-                ablyClient,
                 userName,
                 setUserName,
                 userId,
