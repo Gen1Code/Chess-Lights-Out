@@ -38,15 +38,14 @@ export function consumeQueue(queueName) {
                     connection.close();
                     return reject(error1);
                 }
-                channel.prefetch(1);
 
                 const timer = setTimeout(() => {
                     channel.close(() => {
                         connection.close();
                         resolve(null);
                     });
-                }, 100);
-
+                }, 300);
+                channel.prefetch(1);
                 channel.consume(
                     queueName,
                     (msg) => {
@@ -54,8 +53,12 @@ export function consumeQueue(queueName) {
                             clearTimeout(timer);
                             const messageContent = msg.content.toString();
                             channel.ack(msg);
+                            channel.close(() => {
+                                connection.close();
+                            });
                             resolve(messageContent);
                         }
+                            
                     },
                     {
                         noAck: false,
