@@ -8,13 +8,13 @@ export const GameProvider = ({ children }) => {
         mode: "Single",
         lightsOut: false,
         maze: "Shift",
-        color: "white",
     });
     const [currentSettings, setCurrentSettings] = useState({
         mode: "Single",
         lightsOut: false,
         maze: "Shift",
         color: "white",
+        gameId: "",
     });
     const [status, setStatus] = useState("Haven't started yet");
 

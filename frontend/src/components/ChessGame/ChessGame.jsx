@@ -263,7 +263,7 @@ export function ChessGame() {
 
     useEffect(() => {
         if (ably && !singlePlayer) {
-            console.log("Subscribing to game channel with", gameId);
+            console.log("Subscribing to game channel with", gameId, orientation);
             ably.channels.get(gameId).subscribe(orientation, (msg) => {
                 let data = msg.data;
                 if (data === "Game is starting") {
@@ -274,8 +274,13 @@ export function ChessGame() {
 
                 console.log("Message received:", data);
             });
+
+            return () => {
+                console.log("Unsubscribing from previous channel");
+                ably.channels.get(gameId).unsubscribe(orientation);
+            }
         }
-    }, [ably, gameId]);
+    }, [ably, gameId, orientation]);
 
     return (
         <div className="chessboard">
@@ -289,7 +294,7 @@ export function ChessGame() {
                 customSquareStyles={{ ...squareStyles, ...checkStyle }}
             />
             {playing === false && <div className="mist-overlay"></div>}
-            <GameOverCard className="card" message={status} />
+            <GameOverCard className="card" />
             {process.env.NODE_ENV === "development" && (
                 <>
                     <button onClick={forcegame}>Force Game</button>

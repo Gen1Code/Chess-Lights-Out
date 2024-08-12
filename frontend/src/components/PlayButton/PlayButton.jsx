@@ -6,7 +6,7 @@ export function PlayButton() {
     const [response, setResponse] = useState(null);
     
     const playing = status === "Playing";
-    const looking = status === "Looking for a game";
+    const looking = status === "Looking For a Game";
 
     function playGame() {
         if (settings.mode === "Single") {
@@ -37,7 +37,9 @@ export function PlayButton() {
                 setStatus("You resigned!");
             }else if (message === "Looking For a Game") {
                 setCurrentSettings({...settings, gameId: response.gameId, color: response.color});
-                setStatus("Looking for a game");
+                setStatus("Looking For a Game");
+            }else if(message === "You are already in a game"){
+                apiSetsReponse("/game/get", "POST", {gameId: response.gameId}, setResponse);
             }
 
             if(response.gameId) {

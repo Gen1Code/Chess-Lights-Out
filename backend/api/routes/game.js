@@ -52,6 +52,16 @@ async function addPlayerToGame(gameId, userId, color) {
 }
 
 router.post("/play", async (req, res) => {
+    // Check if the user is already in an ongoing game
+    let game = await db.query(
+        `SELECT * FROM games WHERE (white_player = $1 OR black_player = $1) AND status != $2`,
+        [req.userId, "finished"]
+    );
+
+    if (game.rows.length > 0) {
+        return res.json({ message: "You are already in a game", gameId: game.rows[0].game_id });
+    }
+
     let settings = req.body;
     console.log("settings", settings);
     let mazeIsOn = settings.maze !== "Off";
@@ -101,6 +111,34 @@ router.post("/play", async (req, res) => {
     }
 });
 
+router.post("/get", async (req, res) => {
+    let gameId = req.body.gameId;
+    let game = await db.query(`SELECT * FROM games WHERE game_id = $1`, [
+        gameId,
+    ]);
+
+    if (game.rows.length === 0) {
+        return res.json({ message: "Game not found" });
+    }
+
+    let color;
+    if (game.rows[0].white_player === req.userId) {
+        color = "white";
+    } else if (game.rows[0].black_player === req.userId) {
+        color = "black";
+    } else {
+        return res.json({ message: "You are not in this game" });
+    }
+
+    let status = game.rows[0].status;
+
+    // TODO: if lights out, return the state of the game instead of moves
+    let moves = game.rows[0].moves;
+
+    res.json({ message: "Game ", color: color, gameId: gameId, status: status, moves: moves });
+
+});
+
 router.post("/resign", async (req, res) => {
     let gameId = req.body.gameId;
     let game = await db.query(`SELECT * FROM games WHERE game_id = $1`, [
@@ -112,11 +150,11 @@ router.post("/resign", async (req, res) => {
     }
 
     let color;
-    if(game.rows[0].white_player === req.userId){
+    if (game.rows[0].white_player === req.userId) {
         color = "white";
-    }else if(game.rows[0].black_player === req.userId){
+    } else if (game.rows[0].black_player === req.userId) {
         color = "black";
-    }else{
+    } else {
         return res.json({ message: "You are not in this game" });
     }
 
@@ -134,7 +172,7 @@ router.post("/resign", async (req, res) => {
 });
 
 router.post("/move", async (req, res) => {
-    let userId = req.userId
+    let userId = req.userId;
     let gameId = req.body.gameId;
     let move = req.body.move;
 
@@ -151,20 +189,28 @@ router.post("/move", async (req, res) => {
     }
 
     let color;
-    if(game.rows[0].white_player === userId){
+    if (game.rows[0].white_player === userId) {
         color = "white";
-    }else if(game.rows[0].black_player === userId){
+    } else if (game.rows[0].black_player === userId) {
         color = "black";
-    }else{
+    } else {
         return res.json({ message: "You are not in this game" });
     }
     let otherColor = color === "white" ? "black" : "white";
 
-
+    let moves = game.rows[0].moves;
+    moves = moves ? JSON.parse(moves) : [];
+    
     // TODO: Check if it's the player's move is appropriate
 
+    
+    moves.push(move);
 
-
+    // Update the game moves in the database
+    await db.query(`UPDATE games SET moves = $1 WHERE game_id = $2`, [
+        JSON.stringify(moves),
+        gameId,
+    ]);
 
     // Publish the move to the game channel
     publish(gameId, otherColor, move);
