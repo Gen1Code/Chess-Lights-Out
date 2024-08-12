@@ -20,7 +20,7 @@ import "./ChessGame.css";
 import { useAbly } from "ably/react";
 
 export function ChessGame() {
-    const { currentSettings, status, setStatus, gameId } =
+    const { currentGameSettings, setCurrentGameSettings, gameId } =
         useContext(GameContext);
 
     let ably = useAbly();
@@ -28,20 +28,12 @@ export function ChessGame() {
         ably = null;
     }
 
-    const singlePlayer = currentSettings.mode === "Single";
-    const mazeIsOn = currentSettings.maze !== "Off";
-    const playing = status === "Playing";
+    const singlePlayer = currentGameSettings.mode === "Single";
+    const mazeIsOn = currentGameSettings.maze !== "Off";
+    const playing = currentGameSettings.status === "Playing";
+    const orientation = currentGameSettings.color;
 
     const [game, setGame] = useState(new Chess());
-
-    const [orientation, setOrientation] = useState(
-        singlePlayer
-            ? Math.random() > 0.5
-                ? "white"
-                : "black"
-            : currentSettings.color
-    );
-
     const [maze, setMaze] = useState(() => getRandomMaze());
 
     const [squareStyles, setSquareStyles] = useState({});
@@ -177,7 +169,7 @@ export function ChessGame() {
             styles[square] = {};
         });
 
-        if (currentSettings.lightsOut && playing) {
+        if (currentGameSettings.lightsOut && playing) {
             styles = styleForLightsOut(styles, litupSquares);
         }
 
@@ -195,7 +187,7 @@ export function ChessGame() {
 
         if (playing) {
             // if maze is in shift mode, make shifts
-            if (currentSettings.maze === "Shift") {
+            if (currentGameSettings.maze === "Shift") {
                 setMaze(scramble(maze, 10));
             }
 
@@ -204,7 +196,7 @@ export function ChessGame() {
                 botMove();
             }
         }
-    }, [turn]);
+    }, [turn, currentGameSettings]);
 
     // If something occurs that changes the board, style the squares
     useEffect(() => {
@@ -213,7 +205,7 @@ export function ChessGame() {
             getLitupSquares(game, realMaze, orientation),
             getMazeBorders(maze)
         );
-    }, [maze, game, status]);
+    }, [maze, game, currentGameSettings]);
 
     // if king is in check, style the square
     useEffect(() => {
@@ -231,35 +223,37 @@ export function ChessGame() {
         if (isGameOver) {
             console.log("Game over");
             if (mazeIsOn) {
-                setStatus(mazeGameOverMessage(game, maze));
+                setCurrentGameSettings((prev) => ({
+                    ...prev,
+                    status: mazeGameOverMessage(game, maze),
+                }));
             } else {
-                setStatus(gameOverMessage(game));
+                setCurrentGameSettings((prev) => ({
+                    ...prev,
+                    status: gameOverMessage(game),
+                }));
             }
         }
     }, [isGameOver]);
 
     // On Game Start
     useEffect(() => {
-        if (status === "Playing") {
+        if (currentGameSettings.status === "Playing") {
             console.log("Game started");
-            const newOrientation = singlePlayer
-                ? Math.random() > 0.5
-                    ? "white"
-                    : "black"
-                : currentSettings.color;
+  
             const newGame = new Chess();
             const newMaze = getRandomMaze();
 
-            setOrientation(newOrientation);
+
             setGame(newGame);
             setMaze(newMaze);
 
             // if it's the computer's turn first, trigger a mov
-            if (newOrientation === "black" && singlePlayer) {
+            if (orientation === "black" && singlePlayer) {
                 botMove(newGame, newMaze);
             }
         }
-    }, [status]);
+    }, [currentGameSettings.status]);
 
     useEffect(() => {
         if (ably && !singlePlayer) {
@@ -267,16 +261,16 @@ export function ChessGame() {
             ably.channels.get(gameId).subscribe(orientation, (msg) => {
                 let data = msg.data;
                 if (data === "Game is starting") {
-                    setStatus("Playing");
+                    setCurrentGameSettings((prev) => ({ ...prev, status: "Playing" }));
                 } else if (data === "Opponent resigned") {
-                    setStatus("Opponent resigned!");
+                    setCurrentGameSettings((prev) => ({ ...prev, status: "Opponent resigned!" }));
                 }
 
                 console.log("Message received:", data);
             });
 
             return () => {
-                console.log("Unsubscribing from previous channel");
+                console.log("Unsubscribing from previous channel", gameId, orientation);
                 ably.channels.get(gameId).unsubscribe(orientation);
             }
         }

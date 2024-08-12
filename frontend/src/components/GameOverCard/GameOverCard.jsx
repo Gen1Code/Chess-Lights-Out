@@ -3,7 +3,7 @@ import { GameContext } from "@context/GameContext";
 import "./GameOverCard.css";
 
 export function GameOverCard() {
-    const { status, setStatus, currentSettings } = useContext(GameContext);
+    const { currentGameSettings, setCurrentGameSettings } = useContext(GameContext);
     const [isVisible, setIsVisible] = useState(false);
 
     function handleClose() {
@@ -11,17 +11,18 @@ export function GameOverCard() {
     }
 
     function resetGame() {
-        if (currentSettings.mode === "Single") {
-            setStatus("Playing");
+        if (currentGameSettings.mode === "Single") {
+            let color = Math.random() > 0.5 ? "white" : "black";
+            setCurrentGameSettings((prev) => ({ ...prev, status: "Playing", color: color }));
         }
     }
 
     useEffect(() => {
         // console.log("status", status);
-        setIsVisible(status !== "Playing");
-    }, [status]);
+        setIsVisible(currentGameSettings.status !== "Playing");
+    }, [currentGameSettings.status]);
 
-    if (!isVisible || status === "Haven't started yet") {
+    if (!isVisible || currentGameSettings.status === "Haven't started yet") {
         return null;
     }
 
@@ -31,15 +32,15 @@ export function GameOverCard() {
                 X
             </button>
             <h3>
-                {status !== "Looking For a Game" && (
+                {currentGameSettings.status !== "Looking For a Game" && (
                     <>
                         Game Over
                         <br />
                     </>
                 )}
-                {status}
+                {currentGameSettings.status}
             </h3>
-            {currentSettings.mode === "Single" && (
+            {currentGameSettings.mode === "Single" && (
                 <button onClick={resetGame}>Play Again</button>
             )}
         </div>

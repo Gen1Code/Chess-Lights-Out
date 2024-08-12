@@ -2,26 +2,26 @@ import React, { useState, useContext, useEffect} from 'react';
 import { GameContext } from '@context/GameContext';
 import { apiSetsReponse } from '@utils/api';
 export function PlayButton() {
-    const {settings, currentSettings, setCurrentSettings, status, setStatus, setGameId } = useContext(GameContext);
+    const {settings, currentGameSettings, setCurrentGameSettings, setGameId } = useContext(GameContext);
     const [response, setResponse] = useState(null);
     
-    const playing = status === "Playing";
-    const looking = status === "Looking For a Game";
+    const playing = currentGameSettings.status === "Playing";
+    const looking = currentGameSettings.status === "Looking For a Game";
 
     function playGame() {
         if (settings.mode === "Single") {
-            setCurrentSettings(settings);
-            setStatus("Playing");
+            let color = Math.random() > 0.5 ? "white" : "black";
+            setCurrentGameSettings({...settings, status: "Playing", gameId: "", color: color});
         }else{
             apiSetsReponse("/game/play", "POST", settings, setResponse)
         }
     }
 
     function resign() {
-        if (currentSettings.mode === "Single") {
-            setStatus("You resigned!");
+        if (currentGameSettings.mode === "Single") {
+            setCurrentGameSettings((prev) => ({...prev, status: "You resigned!"}));
         }else{
-            let postData = {gameId: currentSettings.gameId};
+            let postData = {gameId: currentGameSettings.gameId};
             apiSetsReponse("/game/resign", "POST", postData, setResponse)
         }
     }
@@ -31,13 +31,11 @@ export function PlayButton() {
         if (response) {
             let message = response.message;
             if (message === "Game Found") {
-                setCurrentSettings({...settings, gameId: response.gameId, color: response.color});
-                setStatus("Playing");
+                setCurrentGameSettings({...settings, gameId: response.gameId, color: response.color, status: "Playing"});
             }else if (message === "Resigned") {
-                setStatus("You resigned!");
+                setCurrentGameSettings((prev) => ({...prev, status: "You resigned!"}));
             }else if (message === "Looking For a Game") {
-                setCurrentSettings({...settings, gameId: response.gameId, color: response.color});
-                setStatus("Looking For a Game");
+                setCurrentGameSettings({...settings, gameId: response.gameId, color: response.color, status: "Looking For a Game"});
             }else if(message === "You are already in a game"){
                 apiSetsReponse("/game/get", "POST", {gameId: response.gameId}, setResponse);
             }

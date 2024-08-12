@@ -9,14 +9,14 @@ export const GameProvider = ({ children }) => {
         lightsOut: false,
         maze: "Shift",
     });
-    const [currentSettings, setCurrentSettings] = useState({
+    const [currentGameSettings, setCurrentGameSettings] = useState({
         mode: "Single",
         lightsOut: false,
         maze: "Shift",
         color: "white",
         gameId: "",
+        status: "Haven't started yet",
     });
-    const [status, setStatus] = useState("Haven't started yet");
 
     const [userId, setUserId] = useState(localStorage.getItem("user_id"));
     const [userName, setUserName] = useState(localStorage.getItem("user_name"));
@@ -40,10 +40,8 @@ export const GameProvider = ({ children }) => {
             value={{
                 settings,
                 setSettings,
-                currentSettings,
-                setCurrentSettings,
-                status,
-                setStatus,
+                currentGameSettings,
+                setCurrentGameSettings,
                 userName,
                 setUserName,
                 userId,
