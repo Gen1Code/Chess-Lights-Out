@@ -32,8 +32,9 @@ export function getLitupSquares(game, maze, orientation) {
     if (maze !== null) {
         moves = possibleMoves(game, maze);
     } else {
-        game.moves({ verbose: true });
+        moves = game.moves({ verbose: true });
     }
+    
     let squares = new Set();
     moves.forEach((move) => {
         squares.add(move.to);

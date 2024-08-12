@@ -159,7 +159,7 @@ export function ChessGame() {
         }
     }
 
-    function styleSquares(litupSquares, borders) {
+    function styleSquares(game, maze, orientation) {
         // console.log("styleSquares triggered");
 
         let styles = {};
@@ -169,12 +169,14 @@ export function ChessGame() {
             styles[square] = {};
         });
 
+        let realMaze = mazeIsOn ? maze : null;
+
         if (currentGameSettings.lightsOut && playing) {
-            styles = styleForLightsOut(styles, litupSquares);
+            styles = styleForLightsOut(styles, getLitupSquares(game, realMaze, orientation));
         }
 
         if (mazeIsOn) {
-            styles = styleForMaze(styles, borders, orientation);
+            styles = styleForMaze(styles, getMazeBorders(maze), orientation);
         }
 
         // console.log("styles", styles);
@@ -200,11 +202,9 @@ export function ChessGame() {
 
     // If something occurs that changes the board, style the squares
     useEffect(() => {
-        let realMaze = mazeIsOn ? maze : null;
-        styleSquares(
-            getLitupSquares(game, realMaze, orientation),
-            getMazeBorders(maze)
-        );
+        console.log("useEffect triggered with game and maze:", game, maze, orientation);
+        styleSquares(game, maze, orientation);
+
     }, [maze, game, currentGameSettings]);
 
     // if king is in check, style the square
