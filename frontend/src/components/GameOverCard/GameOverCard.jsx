@@ -3,7 +3,7 @@ import { GameContext } from "@context/GameContext";
 import "./GameOverCard.css";
 
 export function GameOverCard({ message }) {
-  const { status, setStatus } = useContext(GameContext);
+  const { status, setStatus, currentSettings } = useContext(GameContext);
   const [isVisible, setIsVisible] = useState(false);
 
   function handleClose() {
@@ -11,7 +11,9 @@ export function GameOverCard({ message }) {
   }
 
   function resetGame() {
-    setStatus("Playing");
+    if(currentSettings.mode === "Single") {
+      setStatus("Playing");
+    }
   }
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function GameOverCard({ message }) {
         Game Over<br></br>
         {message}
       </h3>
-      <button onClick={resetGame}>Play Again</button>
+      {currentSettings.mode === "Single" && (<button onClick={resetGame}>Play Again</button>)}
     </div>
   );
 }

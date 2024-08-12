@@ -106,10 +106,20 @@ router.post("/resign", async (req, res) => {
     let game = await db.query(`SELECT * FROM games WHERE game_id = $1`, [
         gameId,
     ]);
+
     if (game.rows.length === 0) {
         return res.json({ message: "Game not found" });
     }
-    let color = game.rows[0].white_player === req.userId ? "white" : "black";
+
+    let color;
+    if(game.rows[0].white_player === req.userId){
+        color = "white";
+    }else if(game.rows[0].black_player === req.userId){
+        color = "black";
+    }else{
+        return res.json({ message: "You are not in this game" });
+    }
+
     let otherColor = color === "white" ? "black" : "white";
 
     // Update the game status to finished
@@ -121,6 +131,45 @@ router.post("/resign", async (req, res) => {
     publish(gameId, otherColor, "Opponent resigned");
 
     res.json({ message: "Resigned" });
+});
+
+router.post("/move", async (req, res) => {
+    let userId = req.userId
+    let gameId = req.body.gameId;
+    let move = req.body.move;
+
+    let game = await db.query(`SELECT * FROM games WHERE game_id = $1`, [
+        gameId,
+    ]);
+
+    if (game.rows.length === 0) {
+        return res.json({ message: "Game not found" });
+    }
+
+    if (game.rows[0].status !== "ongoing") {
+        return res.json({ message: "Game is not ongoing" });
+    }
+
+    let color;
+    if(game.rows[0].white_player === userId){
+        color = "white";
+    }else if(game.rows[0].black_player === userId){
+        color = "black";
+    }else{
+        return res.json({ message: "You are not in this game" });
+    }
+    let otherColor = color === "white" ? "black" : "white";
+
+
+    // TODO: Check if it's the player's move is appropriate
+
+
+
+
+    // Publish the move to the game channel
+    publish(gameId, otherColor, move);
+
+    res.json({ message: "Move sent" });
 });
 
 export default router;

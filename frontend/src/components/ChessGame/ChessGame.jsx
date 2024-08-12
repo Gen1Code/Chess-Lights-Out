@@ -20,7 +20,8 @@ import "./ChessGame.css";
 import { useAbly } from "ably/react";
 
 export function ChessGame() {
-    const { currentSettings, status, setStatus, gameId } = useContext(GameContext);
+    const { currentSettings, status, setStatus, gameId } =
+        useContext(GameContext);
 
     let ably = useAbly();
     if (ably === "null") {
@@ -34,7 +35,11 @@ export function ChessGame() {
     const [game, setGame] = useState(new Chess());
 
     const [orientation, setOrientation] = useState(
-        singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.color
+        singlePlayer
+            ? Math.random() > 0.5
+                ? "white"
+                : "black"
+            : currentSettings.color
     );
 
     const [maze, setMaze] = useState(() => getRandomMaze());
@@ -238,9 +243,9 @@ export function ChessGame() {
         if (status === "Playing") {
             console.log("Game started");
             const newOrientation = singlePlayer
-                ? (Math.random() > 0.5
+                ? Math.random() > 0.5
                     ? "white"
-                    : "black")
+                    : "black"
                 : currentSettings.color;
             const newGame = new Chess();
             const newMaze = getRandomMaze();
@@ -261,15 +266,16 @@ export function ChessGame() {
             console.log("Subscribing to game channel with", gameId);
             ably.channels.get(gameId).subscribe(orientation, (msg) => {
                 let data = msg.data;
-                if(data === "Game is starting") {
+                if (data === "Game is starting") {
                     setStatus("Playing");
+                } else if (data === "Opponent resigned") {
+                    setStatus("Opponent resigned!");
                 }
-               
+
                 console.log("Message received:", data);
             });
         }
     }, [ably, gameId]);
-
 
     return (
         <div className="chessboard">
