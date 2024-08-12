@@ -1,6 +1,11 @@
 import config from "@config";
 
-export async function apiSetsReponse(path, method = "GET", postData = null, setResponse) {
+export async function apiSetsReponse(
+    path,
+    method = "GET",
+    postData = null,
+    setResponse
+) {
     //get user_id from local
     let user_id = localStorage.getItem("user_id");
     try {
@@ -17,16 +22,14 @@ export async function apiSetsReponse(path, method = "GET", postData = null, setR
 
         const result = await res.json();
         setResponse(result);
-
     } catch (error) {
         console.error("Error during fetch:", error);
     }
 }
 
-
-export async function api(path, method="GET", postData=null){
+export async function api(path, method = "GET", postData = null) {
     let result = null;
-    
+
     //get user_id from local
     let user_id = localStorage.getItem("user_id");
     try {
@@ -40,7 +43,7 @@ export async function api(path, method="GET", postData=null){
             body: method === "POST" ? JSON.stringify(postData) : null,
             credentials: "include",
         });
-        
+
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }

@@ -30,6 +30,8 @@ async function setupDatabase() {
           white_player UUID REFERENCES users(user_id) ON DELETE SET NULL,
           black_player UUID REFERENCES users(user_id) ON DELETE SET NULL,
           moves TEXT,
+          board TEXT,
+          maze_tree TEXT,
           status VARCHAR(60) NOT NULL DEFAULT 'not started',
           lights_out BOOLEAN NOT NULL DEFAULT FALSE,
           maze VARCHAR(10) NOT NULL DEFAULT 'Off',
