@@ -8,16 +8,19 @@ export const GameProvider = ({ children }) => {
         mode: "Single",
         lightsOut: false,
         maze: "Shift",
+        color: "white",
     });
     const [currentSettings, setCurrentSettings] = useState({
         mode: "Single",
         lightsOut: false,
         maze: "Shift",
+        color: "white",
     });
     const [status, setStatus] = useState("Haven't started yet");
 
     const [userId, setUserId] = useState(localStorage.getItem("user_id"));
     const [userName, setUserName] = useState(localStorage.getItem("user_name"));
+    const [gameId, setGameId] = useState(localStorage.getItem("game_id"));
 
     useEffect(() => {
         async function localId() {
@@ -45,6 +48,8 @@ export const GameProvider = ({ children }) => {
                 setUserName,
                 userId,
                 setUserId,
+                gameId,
+                setGameId,
             }}
         >
             {children}

@@ -11,22 +11,18 @@ let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 
 async function createGame(gameId, userId, color, settings) {
     try {
-        if(color === "white"){
-            await db.query(`INSERT INTO games (game_id, white_player, lights_out, maze) VALUES ($1, $2, $3, $4)`, [
-                gameId,
-                userId,
-                settings.lightsOut,
-                settings.maze,
-            ]);
-        }else{
-            await db.query(`INSERT INTO games (game_id, black_player, lights_out, maze) VALUES ($1, $2, $3, $4)`, [
-                gameId,
-                userId,
-                settings.lightsOut,
-                settings.maze,
-            ]);
+        if (color === "white") {
+            await db.query(
+                `INSERT INTO games (game_id, white_player, lights_out, maze) VALUES ($1, $2, $3, $4)`,
+                [gameId, userId, settings.lightsOut, settings.maze]
+            );
+        } else {
+            await db.query(
+                `INSERT INTO games (game_id, black_player, lights_out, maze) VALUES ($1, $2, $3, $4)`,
+                [gameId, userId, settings.lightsOut, settings.maze]
+            );
         }
-    
+
         return true;
     } catch (err) {
         console.error("Failed to create game");
@@ -37,16 +33,16 @@ async function createGame(gameId, userId, color, settings) {
 async function addPlayerToGame(gameId, userId, color) {
     try {
         //Also change status to ongoing
-        if(color === "white"){
-            await db.query(`UPDATE games SET white_player = $1, status = 'ongoing' WHERE game_id = $2`, [
-                userId,
-                gameId,
-            ]);
-        }else{
-            await db.query(`UPDATE games SET black_player = $1, status = 'ongoing' WHERE game_id = $2`, [
-                userId,
-                gameId,
-            ]);
+        if (color === "white") {
+            await db.query(
+                `UPDATE games SET white_player = $1, status = 'ongoing' WHERE game_id = $2`,
+                [userId, gameId]
+            );
+        } else {
+            await db.query(
+                `UPDATE games SET black_player = $1, status = 'ongoing' WHERE game_id = $2`,
+                [userId, gameId]
+            );
         }
         return true;
     } catch (err) {
@@ -72,7 +68,7 @@ router.post("/play", async (req, res) => {
     // If a message is found, it means a game is found
     if (message !== null) {
         let msg = JSON.parse(message.data);
-        
+
         let gameId = msg.gameId;
         let myColor = msg.color === "white" ? "black" : "white";
 
@@ -80,7 +76,7 @@ router.post("/play", async (req, res) => {
         addPlayerToGame(gameId, req.userId, myColor);
 
         //Publish to GID channel
-        publish(gameId, "gameStart", "Game is starting");
+        publish(gameId, msg.color, "Game is starting");
 
         res.json({ message: "Game Found", gameId: gameId, color: myColor });
     } else {
@@ -92,13 +88,39 @@ router.post("/play", async (req, res) => {
 
         // Publish the message to the queue
         publish(queueName, "gameCreation", JSON.stringify(msg));
-        
+
         // Create a new game in the database
         createGame(gameId, req.userId, color, settings);
 
         // Return the game id and color to the user
-        res.json({ message: "Looking For a Game", gameId: gameId, color: color });
+        res.json({
+            message: "Looking For a Game",
+            gameId: gameId,
+            color: color,
+        });
     }
+});
+
+router.post("/resign", async (req, res) => {
+    let gameId = req.body.gameId;
+    let game = await db.query(`SELECT * FROM games WHERE game_id = $1`, [
+        gameId,
+    ]);
+    if (game.rows.length === 0) {
+        return res.json({ message: "Game not found" });
+    }
+    let color = game.rows[0].white_player === req.userId ? "white" : "black";
+    let otherColor = color === "white" ? "black" : "white";
+
+    // Update the game status to finished
+    await db.query(`UPDATE games SET status = 'finished' WHERE game_id = $1`, [
+        gameId,
+    ]);
+
+    // Publish to the game channel that the game is finished
+    publish(gameId, otherColor, "Opponent resigned");
+
+    res.json({ message: "Resigned" });
 });
 
 export default router;

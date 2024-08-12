@@ -20,15 +20,11 @@ import "./ChessGame.css";
 import { useAbly } from "ably/react";
 
 export function ChessGame() {
-    const { currentSettings, status, setStatus } = useContext(GameContext);
+    const { currentSettings, status, setStatus, gameId } = useContext(GameContext);
 
-    const client = useAbly();
-    if (client === "null") {
-        console.log("Ably client is null");
-    } else {
-        client.connection.on("connected", () => {
-            console.log("Connected to Ably");
-        });
+    let ably = useAbly();
+    if (ably === "null") {
+        ably = null;
     }
 
     const singlePlayer = currentSettings.mode === "Single";
@@ -36,8 +32,9 @@ export function ChessGame() {
     const playing = status === "Playing";
 
     const [game, setGame] = useState(new Chess());
+
     const [orientation, setOrientation] = useState(
-        singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : "white"
+        singlePlayer ? (Math.random() > 0.5 ? "white" : "black") : currentSettings.color
     );
 
     const [maze, setMaze] = useState(() => getRandomMaze());
@@ -241,10 +238,10 @@ export function ChessGame() {
         if (status === "Playing") {
             console.log("Game started");
             const newOrientation = singlePlayer
-                ? Math.random() > 0.5
+                ? (Math.random() > 0.5
                     ? "white"
-                    : "black"
-                : currentSettings.playerColor;
+                    : "black")
+                : currentSettings.color;
             const newGame = new Chess();
             const newMaze = getRandomMaze();
 
@@ -258,6 +255,21 @@ export function ChessGame() {
             }
         }
     }, [status]);
+
+    useEffect(() => {
+        if (ably && !singlePlayer) {
+            console.log("Subscribing to game channel with", gameId);
+            ably.channels.get(gameId).subscribe(orientation, (msg) => {
+                let data = msg.data;
+                if(data === "Game is starting") {
+                    setStatus("Playing");
+                }
+               
+                console.log("Message received:", data);
+            });
+        }
+    }, [ably, gameId]);
+
 
     return (
         <div className="chessboard">

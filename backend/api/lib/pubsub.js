@@ -45,7 +45,7 @@ export function consumeQueue(queueName) {
                         connection.close();
                         resolve(null);
                     });
-                }, 300);
+                }, 500);
                 channel.prefetch(1);
                 channel.consume(
                     queueName,
