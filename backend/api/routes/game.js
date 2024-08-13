@@ -13,20 +13,15 @@ let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 
 async function createGame(gameId, userId, color, settings) {
     try {
-        let maze = {};
-        if (settings.maze !== "Off") {
-            maze = getRandomMaze();
-        }
-
         if (color === "white") {
             await db.query(
-                `INSERT INTO games (game_id, white_player, maze, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4, $5)`,
-                [gameId, userId, JSON.stringify(maze), settings.lightsOut, settings.maze]
+                `INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`,
+                [gameId, userId, settings.lightsOut, settings.maze]
             );
         } else {
             await db.query(
-                `INSERT INTO games (game_id, black_player, maze, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4, $5)`,
-                [gameId, userId, JSON.stringify(maze), settings.lightsOut, settings.maze]
+                `INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`,
+                [gameId, userId, settings.lightsOut, settings.maze]
             );
         }
 
@@ -37,23 +32,25 @@ async function createGame(gameId, userId, color, settings) {
     return false;
 }
 
-async function addPlayerToGame(gameId, userId, color) {
+async function addPlayerAndStartGame(gameId, userId, color, maze) {
     try {
-        //Also change status to ongoing
-        if (color === "white") {
-            await db.query(
-                `UPDATE games SET white_player = $1, status = 'ongoing' WHERE game_id = $2`,
-                [userId, gameId]
-            );
-        } else {
-            await db.query(
-                `UPDATE games SET black_player = $1, status = 'ongoing' WHERE game_id = $2`,
-                [userId, gameId]
-            );
-        }
+        // Add Player UID
+        // Change status to ongoing
+        // Add Maze if it exists
+
+        const updateQuery =
+            maze !== null
+                ? `UPDATE games SET ${color}_player = $1, maze = $2, status = 'ongoing' WHERE game_id = $3`
+                : `UPDATE games SET ${color}_player = $1, status = 'ongoing' WHERE game_id = $2`;
+
+        const queryParams =
+            maze !== null ? [userId, JSON.stringify(maze), gameId] : [userId, gameId];
+
+        await db.query(updateQuery, queryParams);
+
         return true;
     } catch (err) {
-        console.error("Failed to add player to game");
+        console.error("Failed to add player to game and/or start the game");
     }
     return false;
 }
@@ -92,11 +89,18 @@ router.post("/play", async (req, res) => {
         let gameId = msg.gameId;
         let myColor = msg.color === "white" ? "black" : "white";
 
-        // Add the player to the game in the database
-        addPlayerToGame(gameId, req.userId, myColor);
+        let maze = mazeIsOn ? getRandomMaze() : null;
+
+        // Add the player to the game and start the game in the database
+        addPlayerAndStartGame(gameId, req.userId, myColor, maze);
 
         //Publish to GID channel
         publish(gameId, msg.color, "Game is starting");
+
+        // Publish the maze if it is on
+        if (mazeIsOn){
+            publish(gameId, "maze", maze);
+        }
 
         res.json({ message: "Game Found", gameId: gameId, color: myColor });
     } else {
@@ -151,7 +155,7 @@ router.post("/get", async (req, res) => {
 
     // If the game is lights out, return the viewable board
     if (gameLightsOutSetting) {
-        let boardObj = JSON.parse(gameBoard);
+        let mazeObj = JSON.parse(gameMaze);
         //TODO: change the board to only show the correct litup squares
         let boardToSend = gameBoard;
         return res.json({
@@ -246,17 +250,17 @@ router.post("/move", async (req, res) => {
     let turn = chessGame.turn();
     let mazeIsOn = mazeSetting !== "Off";
 
-    if(color !== turn){
+    if (color !== turn) {
         return res.json({ message: "It's not your turn" });
     }
 
     let possMoves;
     let maze = JSON.parse(game.rows[0].maze);
 
-    if(mazeIsOn){
+    if (mazeIsOn) {
         // TODO: figure out castling and en passant
         possMoves = possibleMoves(game, maze);
-    }else{
+    } else {
         possMoves = chessGame.moves({ verbose: true });
     }
 
@@ -284,7 +288,7 @@ router.post("/move", async (req, res) => {
     let piece = chessGame.get(move.from);
 
     // Check if the move is a promotion
-    if(move.promotion !== ""){
+    if (move.promotion !== "") {
         piece.type = move.promotion;
     }
 
@@ -294,29 +298,29 @@ router.post("/move", async (req, res) => {
     let newBoard = chessGame.fen();
     let newMaze = maze;
 
-    if(mazeSetting === "Shift"){
+    if (mazeSetting === "Shift") {
         newMaze = scramble(maze, 10);
     }
 
     // TODO: Check if the game is over and update the status in the database
     // TODO: figure out stalemate based on moves
 
-
     // Update the board, moves, and maze in the database
-    await db.query(`UPDATE games SET moves = $1, board = $2, maze = $3 WHERE game_id = $4`, [
-        JSON.stringify(moves),
-        newBoard,
-        JSON.stringify(newMaze),
-        gameId,
-    ]);
+    await db.query(
+        `UPDATE games SET moves = $1, board = $2, maze = $3 WHERE game_id = $4`,
+        [JSON.stringify(moves), newBoard, JSON.stringify(newMaze), gameId]
+    );
 
     // TODO: For each player:
     // TODO: if lights out, publish visible board for player
-    // TODO: if maze shifted, publish the new maze (same for both so only once to a common event name?)
-
 
     // Publish the move to the game channel
     publish(gameId, otherColor, move);
+
+    // Publish the new maze if it was shifted
+    if (mazeSetting === "Shift") {
+        publish(gameId, "maze", newMaze);
+    }
 
     res.json({ message: "Move sent" });
 });

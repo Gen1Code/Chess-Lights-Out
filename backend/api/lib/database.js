@@ -31,8 +31,8 @@ async function setupDatabase() {
           black_player UUID REFERENCES users(user_id) ON DELETE SET NULL,
           moves TEXT DEFAULT '[]',
           board TEXT DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-          maze TEXT,
-          status VARCHAR(60) NOT NULL DEFAULT 'not started',
+          maze TEXT DEFAULT '{}',
+          status VARCHAR(20) NOT NULL DEFAULT 'not started',
           lights_out_setting BOOLEAN NOT NULL DEFAULT FALSE,
           maze_Setting VARCHAR(10) NOT NULL DEFAULT 'Off',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
