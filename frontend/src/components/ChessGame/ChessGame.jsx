@@ -20,8 +20,15 @@ import "./ChessGame.css";
 import { useAbly } from "ably/react";
 
 export function ChessGame() {
-    const { currentGameSettings, setCurrentGameSettings, gameId } =
-        useContext(GameContext);
+    const {
+        currentGameSettings,
+        setCurrentGameSettings,
+        gameId,
+        game,
+        setGame,
+        maze,
+        setMaze,
+    } = useContext(GameContext);
 
     let ably = useAbly();
     if (ably === "null") {
@@ -32,9 +39,6 @@ export function ChessGame() {
     const mazeIsOn = currentGameSettings.maze !== "Off";
     const playing = currentGameSettings.status === "Playing";
     const orientation = currentGameSettings.color;
-
-    const [game, setGame] = useState(new Chess());
-    const [maze, setMaze] = useState(() => getRandomMaze());
 
     const [squareStyles, setSquareStyles] = useState({});
     const [checkStyle, setCheckStyle] = useState({});
@@ -172,7 +176,10 @@ export function ChessGame() {
         let realMaze = mazeIsOn ? maze : null;
 
         if (currentGameSettings.lightsOut && playing) {
-            styles = styleForLightsOut(styles, getLitupSquares(game, realMaze, orientation));
+            styles = styleForLightsOut(
+                styles,
+                getLitupSquares(game, realMaze, orientation)
+            );
         }
 
         if (mazeIsOn) {
@@ -202,9 +209,13 @@ export function ChessGame() {
 
     // If something occurs that changes the board, style the squares
     useEffect(() => {
-        console.log("useEffect triggered with game and maze:", game, maze, orientation);
+        console.log(
+            "useEffect triggered with game and maze:",
+            game,
+            maze,
+            orientation
+        );
         styleSquares(game, maze, orientation);
-
     }, [maze, game, currentGameSettings]);
 
     // if king is in check, style the square
@@ -240,10 +251,9 @@ export function ChessGame() {
     useEffect(() => {
         if (currentGameSettings.status === "Playing") {
             console.log("Game started");
-  
+
             const newGame = new Chess();
             const newMaze = getRandomMaze();
-
 
             setGame(newGame);
             setMaze(newMaze);
@@ -257,14 +267,24 @@ export function ChessGame() {
 
     useEffect(() => {
         if (ably && !singlePlayer) {
-            console.log("Subscribing to game channel with", gameId, orientation);
+            console.log(
+                "Subscribing to game channel with",
+                gameId,
+                orientation
+            );
             ably.channels.get(gameId).subscribe(orientation, (msg) => {
                 let data = msg.data;
                 if (data === "Game is starting") {
-                    setCurrentGameSettings((prev) => ({ ...prev, status: "Playing" }));
+                    setCurrentGameSettings((prev) => ({
+                        ...prev,
+                        status: "Playing",
+                    }));
                 } else if (data === "Opponent resigned") {
-                    setCurrentGameSettings((prev) => ({ ...prev, status: "Opponent resigned!" }));
-                }else{
+                    setCurrentGameSettings((prev) => ({
+                        ...prev,
+                        status: "Opponent resigned!",
+                    }));
+                } else {
                     let gameCopy = new Chess(game.fen());
                     let fen = gameCopy.fen().split(" ");
                     fen[1] = fen[1] === "w" ? "b" : "w";
@@ -278,7 +298,7 @@ export function ChessGame() {
 
                     gameCopy.remove(data.from);
                     gameCopy.put(piece, data.to);
-                    
+
                     setGame(gameCopy);
                 }
 
@@ -291,10 +311,14 @@ export function ChessGame() {
             });
 
             return () => {
-                console.log("Unsubscribing from previous channel", gameId, orientation);
+                console.log(
+                    "Unsubscribing from previous channel",
+                    gameId,
+                    orientation
+                );
                 ably.channels.get(gameId).unsubscribe(orientation);
                 ably.channels.get(gameId).unsubscribe("maze");
-            }
+            };
         }
     }, [ably, gameId, orientation]);
 

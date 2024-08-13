@@ -1,9 +1,17 @@
 import React, { useState, useContext, useEffect } from "react";
 import { GameContext } from "@context/GameContext";
 import { apiSetsReponse } from "@utils/api";
+import { Chess } from "chess.js";
+
 export function PlayButton() {
-    const { settings, currentGameSettings, setCurrentGameSettings, setGameId } =
-        useContext(GameContext);
+    const {
+        settings,
+        currentGameSettings,
+        setCurrentGameSettings,
+        setGameId,
+        setGame,
+        setMaze,
+    } = useContext(GameContext);
     const [response, setResponse] = useState(null);
 
     const playing = currentGameSettings.status === "Playing";
@@ -65,20 +73,28 @@ export function PlayButton() {
                     { gameId: response.gameId },
                     setResponse
                 );
-            } else if(message === "Game") {
+            } else if (message === "Game") {
                 setCurrentGameSettings({
                     mode: "Multi",
                     gameId: response.gameId,
                     color: response.color,
                     status: response.status,
                     maze: response.mazeSetting,
-                    lightsOut: response.lightsOutSetting
+                    lightsOut: response.lightsOutSetting,
                 });
-                
-                //TODO: Set the board and maze or Moves depending on the game settings
-                // let board = response.board;
-                // let maze = JSON.parse(response.maze);
-                // let moves = response.moves;
+
+                let maze = JSON.parse(response.maze);
+                let board = response.board;
+
+                if (response.lightsOutSetting) {
+                    //TODO: DO stuff to make the board only show the lit up squares
+                } else {
+                    let moves = response.moves;
+                    //TODO: Apply the moves to the board history?
+                }
+
+                setGame(new Chess(board));
+                setMaze(maze);
             }
 
             if (response.gameId) {

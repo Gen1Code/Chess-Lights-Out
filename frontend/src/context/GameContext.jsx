@@ -1,5 +1,7 @@
 import React, { createContext, useEffect, useState } from "react";
 import { api } from "../utils/api";
+import { Chess } from "chess.js";
+import { getRandomMaze } from "@utils/maze";
 
 export const GameContext = createContext();
 
@@ -21,6 +23,9 @@ export const GameProvider = ({ children }) => {
     const [userId, setUserId] = useState(localStorage.getItem("user_id"));
     const [userName, setUserName] = useState(localStorage.getItem("user_name"));
     const [gameId, setGameId] = useState(localStorage.getItem("game_id"));
+
+    const [game, setGame] = useState(new Chess());
+    const [maze, setMaze] = useState(() => getRandomMaze());
 
     useEffect(() => {
         async function localId() {
@@ -48,6 +53,10 @@ export const GameProvider = ({ children }) => {
                 setUserId,
                 gameId,
                 setGameId,
+                game,
+                setGame,
+                maze,
+                setMaze,
             }}
         >
             {children}

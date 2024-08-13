@@ -14,7 +14,12 @@ let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 async function createGame(gameId, userId, color, settings) {
     try {
         const insertQuery = `INSERT INTO games (game_id, ${color}_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`;
-        const insertParams = [gameId, userId, settings.lightsOut, settings.maze];
+        const insertParams = [
+            gameId,
+            userId,
+            settings.lightsOut,
+            settings.maze,
+        ];
         await db.query(insertQuery, insertParams);
 
         return true;
@@ -36,7 +41,9 @@ async function addPlayerAndStartGame(gameId, userId, color, maze) {
                 : `UPDATE games SET ${color}_player = $1, status = 'ongoing' WHERE game_id = $2`;
 
         const queryParams =
-            maze !== null ? [userId, JSON.stringify(maze), gameId] : [userId, gameId];
+            maze !== null
+                ? [userId, JSON.stringify(maze), gameId]
+                : [userId, gameId];
 
         await db.query(updateQuery, queryParams);
 
@@ -90,7 +97,7 @@ router.post("/play", async (req, res) => {
         publish(gameId, msg.color, "Game is starting");
 
         // Publish the maze if it is on
-        if (mazeIsOn){
+        if (mazeIsOn) {
             publish(gameId, "maze", maze);
         }
 
@@ -236,9 +243,16 @@ router.post("/move", async (req, res) => {
     let otherColor = color === "white" ? "black" : "white";
 
     let board = game.rows[0].board;
+    let moves = JSON.parse(game.rows[0].moves);
     let mazeSetting = game.rows[0].maze_setting;
 
-    let chessGame = new Chess(board);
+    let chessGame; 
+    if(mazeIsOn){
+        chessGame = new Chess(board);
+    }else{
+        chessGame = new Chess().loadPgn(moves.join(" ")); // TODO: check if this works might need to add turn numbers
+    }
+
     let turn = chessGame.turn();
     let mazeIsOn = mazeSetting !== "Off";
 
@@ -268,24 +282,27 @@ router.post("/move", async (req, res) => {
         return res.json({ message: "Invalid move" });
     }
 
-    let moves = JSON.parse(game.rows[0].moves);
     moves.push(move.from + move.to + move.promotion);
 
-    // TODO: Check if the move is a castle and update the rook position
+    // TODO: Check if the move is a castle and update the rook position + remove the castling rights
+    // TODO: check if king is moved and remove castling rights
     // TODO: check if the move is en passant and remove the captured pawn
-
-    let fen = chessGame.fen().split(" ");
-    fen[1] = fen[1] === "w" ? "b" : "w";
-    chessGame.load(fen.join(" "));
-    let piece = chessGame.get(move.from);
-
-    // Check if the move is a promotion
-    if (move.promotion !== "") {
-        piece.type = move.promotion;
+    if (mazeIsOn) {
+        let fen = chessGame.fen().split(" ");
+        fen[1] = fen[1] === "w" ? "b" : "w";
+        chessGame.load(fen.join(" "));
+        let piece = chessGame.get(move.from);
+    
+        // Check if the move is a promotion
+        if (move.promotion !== "") {
+            piece.type = move.promotion;
+        }
+    
+        chessGame.remove(move.from);
+        chessGame.put(piece, move.to);
+    }else{
+        chessGame.move(move);
     }
-
-    chessGame.remove(move.from);
-    chessGame.put(piece, move.to);
 
     let newBoard = chessGame.fen();
     let newMaze = maze;
@@ -294,19 +311,30 @@ router.post("/move", async (req, res) => {
         newMaze = scramble(maze, 10);
     }
 
-    // TODO: Check if the game is over and update the status in the database
-    // TODO: figure out stalemate based on moves
+    // TODO: figure out threefold repetition based on moves
+    let gameIsOver = false;
+    if (mazeIsOn) {
+        //TODO: check if the game is over accounting for the maze
+    } else {
+        gameIsOver = chessGame.isGameOver(); //TODO: threefold repetition + 50 move rule need to be implemented
+    }
 
-    // Update the board, moves, and maze in the database
-    await db.query(
-        `UPDATE games SET moves = $1, board = $2, maze = $3 WHERE game_id = $4`,
-        [JSON.stringify(moves), newBoard, JSON.stringify(newMaze), gameId]
-    );
+    let statusSetInQuery = gameIsOver ? ", status = 'finished'" : "";
+    let updateQuery = mazeIsOn
+        ? `UPDATE games SET moves = $1, board = $2, maze = $3 ${statusSetInQuery} WHERE game_id = $3`
+        : `UPDATE games SET moves = $1, board = $2 ${statusSetInQuery} WHERE game_id = $4`;
+
+    let updateParams = mazeIsOn
+        ? [JSON.stringify(moves), newBoard, JSON.stringify(newMaze), gameId]
+        : [JSON.stringify(moves), newBoard, gameId];
+
+    // Update the database
+    await db.query(updateQuery, updateParams);
 
     // TODO: For each player:
     // TODO: if lights out, publish visible board for player
 
-    // Publish the move to the game channel
+    // Publish the move to the game channel (TODO: for now)
     publish(gameId, otherColor, move);
 
     // Publish the new maze if it was shifted
