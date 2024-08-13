@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import db from "../lib/database.js";
 import { publish, getMessageFromQueue } from "../lib/pubsub.js";
-import { possibleMoves } from "../lib/chessUtils.js";
+import { possibleMoves, scramble, getRandomMaze } from "../lib/chessUtils.js";
 import { Chess } from "chess.js";
 
 dotenv.config();
@@ -13,15 +13,20 @@ let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 
 async function createGame(gameId, userId, color, settings) {
     try {
+        let maze = {};
+        if (settings.maze !== "Off") {
+            maze = getRandomMaze();
+        }
+
         if (color === "white") {
             await db.query(
-                `INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`,
-                [gameId, userId, settings.lightsOut, settings.maze]
+                `INSERT INTO games (game_id, white_player, maze, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4, $5)`,
+                [gameId, userId, JSON.stringify(maze), settings.lightsOut, settings.maze]
             );
         } else {
             await db.query(
-                `INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`,
-                [gameId, userId, settings.lightsOut, settings.maze]
+                `INSERT INTO games (game_id, black_player, maze, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4, $5)`,
+                [gameId, userId, JSON.stringify(maze), settings.lightsOut, settings.maze]
             );
         }
 
@@ -245,18 +250,19 @@ router.post("/move", async (req, res) => {
         return res.json({ message: "It's not your turn" });
     }
 
-    let possibleMoves;
+    let possMoves;
     let maze = JSON.parse(game.rows[0].maze);
 
     if(mazeIsOn){
-        possibleMoves = possibleMoves(game, maze);
+        // TODO: figure out castling and en passant
+        possMoves = possibleMoves(game, maze);
     }else{
-        possibleMoves = chessGame.moves({ verbose: true });
+        possMoves = chessGame.moves({ verbose: true });
     }
 
     let validMove = false;
-    for (let i = 0; i < possibleMoves.length; i++) {
-        if (possibleMoves[i].from === move.from && possibleMoves[i].to === move.to) {
+    for (let i = 0; i < possMoves.length; i++) {
+        if (possMoves[i].from === move.from && possMoves[i].to === move.to) {
             validMove = true;
             break;
         }
@@ -269,13 +275,45 @@ router.post("/move", async (req, res) => {
     let moves = JSON.parse(game.rows[0].moves);
     moves.push(move.from + move.to + move.promotion);
 
-    //TODO: Update the board state and change maze state
+    // TODO: Check if the move is a castle and update the rook position
+    // TODO: check if the move is en passant and remove the captured pawn
+
+    let fen = chessGame.fen().split(" ");
+    fen[1] = fen[1] === "w" ? "b" : "w";
+    chessGame.load(fen.join(" "));
+    let piece = chessGame.get(move.from);
+
+    // Check if the move is a promotion
+    if(move.promotion !== ""){
+        piece.type = move.promotion;
+    }
+
+    chessGame.remove(move.from);
+    chessGame.put(piece, move.to);
+
+    let newBoard = chessGame.fen();
+    let newMaze = maze;
+
+    if(mazeSetting === "Shift"){
+        newMaze = scramble(maze, 10);
+    }
+
+    // TODO: Check if the game is over and update the status in the database
+    // TODO: figure out stalemate based on moves
+
+
     // Update the board, moves, and maze in the database
-    // Update the game moves in the database
-    await db.query(`UPDATE games SET moves = $1 WHERE game_id = $2`, [
+    await db.query(`UPDATE games SET moves = $1, board = $2, maze = $3 WHERE game_id = $4`, [
         JSON.stringify(moves),
+        newBoard,
+        JSON.stringify(newMaze),
         gameId,
     ]);
+
+    // TODO: For each player:
+    // TODO: if lights out, publish visible board for player
+    // TODO: if maze shifted, publish the new maze (same for both so only once to a common event name?)
+
 
     // Publish the move to the game channel
     publish(gameId, otherColor, move);

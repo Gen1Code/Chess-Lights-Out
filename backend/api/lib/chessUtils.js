@@ -12,6 +12,19 @@ export const SQUARES = [
     'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1',
   ];
 
+const defaultMaze = {
+    root: 63,
+    tree: [
+        [1, 2, 3, 4, 5, 6, 7, 15],
+        [9, 10, 11, 12, 13, 14, 15, 23],
+        [17, 18, 19, 20, 21, 22, 23, 31],
+        [25, 26, 27, 28, 29, 30, 31, 39],
+        [33, 34, 35, 36, 37, 38, 39, 47],
+        [41, 42, 43, 44, 45, 46, 47, 55],
+        [49, 50, 51, 52, 53, 54, 55, 63],
+        [57, 58, 59, 60, 61, 62, 63, null],
+    ],
+};
 function inCheckInMaze(game, maze) {
     if (!game.inCheck()) {
         return false;
@@ -486,4 +499,37 @@ export function possibleMoves(game, maze) {
     // console.log("All Possible Moves in Maze (filtered)", filteredMoves);
 
     return filteredMoves;
+}
+
+export function getRandomMaze() {
+    return scramble(defaultMaze, 1000);
+}
+
+export function scramble(maze, n) {
+    // console.log("scramble", maze, n)
+    let newMaze = { ...maze };
+    for (let i = 0; i < n; i++) {
+        let root = newMaze.root;
+        let rootChoices = [];
+        if (root % 8 != 0) {
+            rootChoices.push(root - 1);
+        }
+        if (root % 8 != 7) {
+            rootChoices.push(root + 1);
+        }
+        if (root >= 8) {
+            rootChoices.push(root - 8);
+        }
+        if (root <= 55) {
+            rootChoices.push(root + 8);
+        }
+
+        let newRoot =
+            rootChoices[Math.floor(Math.random() * rootChoices.length)];
+        newMaze.tree[Math.floor(root / 8)][root % 8] = newRoot;
+        newMaze.root = newRoot;
+        newMaze.tree[Math.floor(newRoot / 8)][newRoot % 8] = null;
+    }
+
+    return newMaze;
 }
