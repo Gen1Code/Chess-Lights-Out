@@ -1,83 +1,49 @@
-import { findKing, SQUARES } from "./ChessUtils";
 import { Chess } from "chess.js";
 
-const defaultMaze = {
-    root: 63,
-    tree: [
-        [1, 2, 3, 4, 5, 6, 7, 15],
-        [9, 10, 11, 12, 13, 14, 15, 23],
-        [17, 18, 19, 20, 21, 22, 23, 31],
-        [25, 26, 27, 28, 29, 30, 31, 39],
-        [33, 34, 35, 36, 37, 38, 39, 47],
-        [41, 42, 43, 44, 45, 46, 47, 55],
-        [49, 50, 51, 52, 53, 54, 55, 63],
-        [57, 58, 59, 60, 61, 62, 63, null],
-    ],
-};
+// prettier-ignore
+export const SQUARES = [
+    'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8',
+    'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
+    'a6', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6',
+    'a5', 'b5', 'c5', 'd5', 'e5', 'f5', 'g5', 'h5',
+    'a4', 'b4', 'c4', 'd4', 'e4', 'f4', 'g4', 'h4',
+    'a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3',
+    'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
+    'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1',
+  ];
 
-export function getRandomMaze() {
-    return scramble(defaultMaze, 1000);
-}
-
-export function scramble(maze, n) {
-    // console.log("scramble", maze, n)
-    let newMaze = { ...maze };
-    for (let i = 0; i < n; i++) {
-        let root = newMaze.root;
-        let rootChoices = [];
-        if (root % 8 != 0) {
-            rootChoices.push(root - 1);
-        }
-        if (root % 8 != 7) {
-            rootChoices.push(root + 1);
-        }
-        if (root >= 8) {
-            rootChoices.push(root - 8);
-        }
-        if (root <= 55) {
-            rootChoices.push(root + 8);
-        }
-
-        let newRoot =
-            rootChoices[Math.floor(Math.random() * rootChoices.length)];
-        newMaze.tree[Math.floor(root / 8)][root % 8] = newRoot;
-        newMaze.root = newRoot;
-        newMaze.tree[Math.floor(newRoot / 8)][newRoot % 8] = null;
+function inCheckInMaze(game, maze) {
+    if (!game.inCheck()) {
+        return false;
     }
 
-    return newMaze;
+    let turn = game.turn();
+    let kingSquare = findKing(game, turn);
+
+    let fen = game.fen().split(" ");
+    fen[1] = turn === "w" ? "b" : "w";
+    let oppTurnGame = new Chess(fen.join(" "));
+
+    let moves = piecesMovements(oppTurnGame, maze);
+    for (let i = 0; i < moves.length; i++) {
+        if (moves[i].to === kingSquare) {
+            return true;
+        }
+    }
+    return false;
 }
 
-export function getMazeBorders(maze) {
-    let tree = maze.tree;
-    let borders = {};
-    for (let i = 0; i < 64; i++) {
-        borders[i] = new Set(["top", "bottom", "left", "right"]);
-    }
-
-    for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-            if (tree[i][j] !== null) {
-                if (i * 8 + j - tree[i][j] === 8) {
-                    borders[i * 8 + j].delete("top");
-                    borders[tree[i][j]].delete("bottom");
-                } else if (i * 8 + j - tree[i][j] === -8) {
-                    borders[i * 8 + j].delete("bottom");
-                    borders[tree[i][j]].delete("top");
-                } else if (i * 8 + j - tree[i][j] === 1) {
-                    borders[i * 8 + j].delete("left");
-                    borders[tree[i][j]].delete("right");
-                } else if (i * 8 + j - tree[i][j] === -1) {
-                    borders[i * 8 + j].delete("right");
-                    borders[tree[i][j]].delete("left");
-                } else {
-                    console.error("Invalid maze tree");
-                }
+function findKing(game, color) {
+    let kingSquare = null;
+    const board = game.board();
+    board.forEach((row, i) => {
+        row.forEach((piece, j) => {
+            if (piece && piece.type === "k" && piece.color === color) {
+                kingSquare = SQUARES[8 * i + j];
             }
-        }
-    }
-
-    return borders;
+        });
+    });
+    return kingSquare;
 }
 
 function canDiagonal(tree, sRow, sCol, tRow, tCol) {
@@ -476,7 +442,6 @@ function piecesMovements(game, maze) {
     return moves;
 }
 
-//Optimised for speed
 export function possibleMoves(game, maze) {
     //No Moves if game is over
     let fen = game.fen().split(" ");
@@ -521,126 +486,4 @@ export function possibleMoves(game, maze) {
     // console.log("All Possible Moves in Maze (filtered)", filteredMoves);
 
     return filteredMoves;
-}
-
-export function inCheckInMaze(game, maze) {
-    if (!game.inCheck()) {
-        return false;
-    }
-
-    let turn = game.turn();
-    let kingSquare = findKing(game, turn);
-
-    let fen = game.fen().split(" ");
-    fen[1] = turn === "w" ? "b" : "w";
-    let oppTurnGame = new Chess(fen.join(" "));
-
-    let moves = piecesMovements(oppTurnGame, maze);
-    for (let i = 0; i < moves.length; i++) {
-        if (moves[i].to === kingSquare) {
-            return true;
-        }
-    }
-    return false;
-}
-
-export function attackingKingInMaze(game, maze) {
-    let attackers = [];
-
-    if (!game.inCheck()) {
-        return attackers;
-    }
-
-    let turn = game.turn();
-    let kingSquare = findKing(game, turn);
-
-    let fen = game.fen().split(" ");
-    fen[1] = turn === "w" ? "b" : "w";
-    let oppTurnGame = new Chess(fen.join(" "));
-
-    let moves = piecesMovements(oppTurnGame, maze);
-    for (let i = 0; i < moves.length; i++) {
-        if (moves[i].to === kingSquare) {
-            attackers.push(moves[i].from);
-        }
-    }
-    return attackers;
-}
-
-export function makeMoveInMaze(move, game) {
-    let captured = game.get(move.to);
-    let fen = game.fen().split(" ");
-    fen[1] = fen[1] === "w" ? "b" : "w";
-    game.load(fen.join(" "));
-
-    game.remove(move.from);
-    if (move.flags.includes("p")) {
-        game.put({ type: "q", color: move.color }, move.to);
-    } else {
-        game.put({ type: move.piece, color: move.color }, move.to);
-    }
-    return captured;
-}
-
-export function styleForMaze(styles, borders, orientation) {
-    //flip the maze for black player
-    if (orientation === "black") {
-        let newBorders = {};
-        Object.keys(borders).forEach((squareIndex) => {
-            newBorders[squareIndex] = new Set();
-            if (borders[squareIndex].has("top")) {
-                newBorders[squareIndex].add("bottom");
-            }
-            if (borders[squareIndex].has("bottom")) {
-                newBorders[squareIndex].add("top");
-            }
-            if (borders[squareIndex].has("left")) {
-                newBorders[squareIndex].add("right");
-            }
-            if (borders[squareIndex].has("right")) {
-                newBorders[squareIndex].add("left");
-            }
-        });
-        borders = newBorders;
-    }
-
-    Object.keys(borders).forEach((squareIndex) => {
-        let square = SQUARES[squareIndex];
-        styles[square].boxSizing = "border-box";
-
-        if (borders[squareIndex].has("top")) {
-            styles[square].borderTop = "3px solid firebrick";
-        }
-        if (borders[squareIndex].has("bottom")) {
-            styles[square].borderBottom = "3px solid firebrick";
-        }
-        if (borders[squareIndex].has("left")) {
-            styles[square].borderLeft = "3px solid firebrick";
-        }
-        if (borders[squareIndex].has("right")) {
-            styles[square].borderRight = "3px solid firebrick";
-        }
-    });
-    // console.log("styles:", styles);
-
-    return styles;
-}
-
-export function mazeGameOverMessage(game, maze) {
-    let moves = possibleMoves(game, maze);
-    if (moves.length === 0) {
-        let fen = game.fen().split(" ");
-        fen[1] = game.turn() === "w" ? "b" : "w";
-        let oppTurnGame = new Chess(fen.join(" "));
-        if (inCheckInMaze(game, maze) || inCheckInMaze(oppTurnGame, maze)) {
-            return "Checkmate!";
-        } else {
-            return "Stalemate!";
-        }
-    }else if(game.isInsufficientMaterial()){
-        return "Insufficient Material!";
-    }else {
-      console.error("Game over but no reason found");
-      return "Game Over!";
-    }
 }

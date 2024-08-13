@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import db from "../lib/database.js";
 import { publish, getMessageFromQueue } from "../lib/pubsub.js";
+import { possibleMoves } from "../lib/chessUtils.js";
+import { Chess } from "chess.js";
 
 dotenv.config();
 const router = express.Router();
@@ -13,12 +15,12 @@ async function createGame(gameId, userId, color, settings) {
     try {
         if (color === "white") {
             await db.query(
-                `INSERT INTO games (game_id, white_player, lights_out, maze) VALUES ($1, $2, $3, $4)`,
+                `INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`,
                 [gameId, userId, settings.lightsOut, settings.maze]
             );
         } else {
             await db.query(
-                `INSERT INTO games (game_id, black_player, lights_out, maze) VALUES ($1, $2, $3, $4)`,
+                `INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`,
                 [gameId, userId, settings.lightsOut, settings.maze]
             );
         }
@@ -135,15 +137,15 @@ router.post("/get", async (req, res) => {
 
     const {
         status: gameStatus,
-        moves,
-        lights_out: gameLightsOut,
+        moves: moves,
+        lights_out_setting: gameLightsOutSetting,
         board: gameBoard,
         maze: gameMaze,
-        maze_tree: gameMazeTree,
+        maze_setting: gameMazeSetting,
     } = game.rows[0];
 
     // If the game is lights out, return the viewable board
-    if (gameLightsOut) {
+    if (gameLightsOutSetting) {
         let boardObj = JSON.parse(gameBoard);
         //TODO: change the board to only show the correct litup squares
         let boardToSend = gameBoard;
@@ -153,9 +155,9 @@ router.post("/get", async (req, res) => {
             gameId: gameId,
             status: gameStatus,
             board: boardToSend,
-            lightsOut: gameLightsOut,
+            lightsOutSetting: gameLightsOutSetting,
             maze: gameMaze,
-            mazeTree: gameMazeTree,
+            mazeSetting: gameMazeSetting,
         });
     }
 
@@ -166,8 +168,9 @@ router.post("/get", async (req, res) => {
         status: gameStatus,
         moves: moves,
         board: gameBoard,
+        lightsOutSetting: gameLightsOutSetting,
         maze: gameMaze,
-        mazeTree: gameMazeTree,
+        mazeSetting: gameMazeSetting,
     });
 });
 
@@ -231,22 +234,43 @@ router.post("/move", async (req, res) => {
     }
     let otherColor = color === "white" ? "black" : "white";
 
-    let moves = game.rows[0].moves;
-    moves = moves ? JSON.parse(moves) : [];
-    
     let board = game.rows[0].board;
-    let mazeTree = game.rows[0].maze_tree;
+    let mazeSetting = game.rows[0].maze_setting;
 
-    // TODO: Check if it's the player's move is appropriate
-    // if not return json message
-    // ? Possibly add turn to db schema, to check if it's the player's turn
+    let chessGame = new Chess(board);
+    let turn = chessGame.turn();
+    let mazeIsOn = mazeSetting !== "Off";
 
-    moves.push(move);
+    if(color !== turn){
+        return res.json({ message: "It's not your turn" });
+    }
+
+    let possibleMoves;
+    let maze = JSON.parse(game.rows[0].maze);
+
+    if(mazeIsOn){
+        possibleMoves = possibleMoves(game, maze);
+    }else{
+        possibleMoves = chessGame.moves({ verbose: true });
+    }
+
+    let validMove = false;
+    for (let i = 0; i < possibleMoves.length; i++) {
+        if (possibleMoves[i].from === move.from && possibleMoves[i].to === move.to) {
+            validMove = true;
+            break;
+        }
+    }
+
+    if (!validMove) {
+        return res.json({ message: "Invalid move" });
+    }
+
+    let moves = JSON.parse(game.rows[0].moves);
+    moves.push(move.from + move.to + move.promotion);
 
     //TODO: Update the board state and change maze state
-
     // Update the board, moves, and maze in the database
-
     // Update the game moves in the database
     await db.query(`UPDATE games SET moves = $1 WHERE game_id = $2`, [
         JSON.stringify(moves),

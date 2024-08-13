@@ -8,7 +8,7 @@ router.get('/server', (req, res) => {
 });
   
 router.get('/db', async (req, res) => {
-    const result = await db.query("SELECT * FROM users LIMIT 5");
+    const result = await db.query("SELECT name FROM users LIMIT 5");
     res.json(result.rows);
 });
 

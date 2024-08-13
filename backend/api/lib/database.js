@@ -29,12 +29,12 @@ async function setupDatabase() {
           game_id UUID UNIQUE NOT NULL,
           white_player UUID REFERENCES users(user_id) ON DELETE SET NULL,
           black_player UUID REFERENCES users(user_id) ON DELETE SET NULL,
-          moves TEXT,
+          moves TEXT DEFAULT '[]',
           board TEXT,
-          maze_tree TEXT,
+          maze TEXT,
           status VARCHAR(60) NOT NULL DEFAULT 'not started',
-          lights_out BOOLEAN NOT NULL DEFAULT FALSE,
-          maze VARCHAR(10) NOT NULL DEFAULT 'Off',
+          lights_out_setting BOOLEAN NOT NULL DEFAULT FALSE,
+          maze_Setting VARCHAR(10) NOT NULL DEFAULT 'Off',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );`;
 
