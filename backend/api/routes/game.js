@@ -13,17 +13,9 @@ let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 
 async function createGame(gameId, userId, color, settings) {
     try {
-        if (color === "white") {
-            await db.query(
-                `INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`,
-                [gameId, userId, settings.lightsOut, settings.maze]
-            );
-        } else {
-            await db.query(
-                `INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`,
-                [gameId, userId, settings.lightsOut, settings.maze]
-            );
-        }
+        const insertQuery = `INSERT INTO games (game_id, ${color}_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`;
+        const insertParams = [gameId, userId, settings.lightsOut, settings.maze];
+        await db.query(insertQuery, insertParams);
 
         return true;
     } catch (err) {

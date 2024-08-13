@@ -187,14 +187,14 @@ export function ChessGame() {
     useEffect(() => {
         console.log("useEffect triggered with turn:", turn);
 
-        if (playing) {
+        if (playing && singlePlayer) {
             // if maze is in shift mode, make shifts
             if (currentGameSettings.maze === "Shift") {
                 setMaze(scramble(maze, 10));
             }
 
             // if it's the computer's turn, make a move
-            if (turn !== orientation && singlePlayer && !isGameOver) {
+            if (turn !== orientation && !isGameOver) {
                 botMove();
             }
         }
@@ -264,14 +264,36 @@ export function ChessGame() {
                     setCurrentGameSettings((prev) => ({ ...prev, status: "Playing" }));
                 } else if (data === "Opponent resigned") {
                     setCurrentGameSettings((prev) => ({ ...prev, status: "Opponent resigned!" }));
+                }else{
+                    let gameCopy = new Chess(game.fen());
+                    let fen = gameCopy.fen().split(" ");
+                    fen[1] = fen[1] === "w" ? "b" : "w";
+                    gameCopy.load(fen.join(" "));
+                    let piece = gameCopy.get(data.from);
+
+                    // Check if the move is a promotion
+                    if (data.promotion !== "") {
+                        piece.type = data.promotion;
+                    }
+
+                    gameCopy.remove(data.from);
+                    gameCopy.put(piece, data.to);
+                    
+                    setGame(gameCopy);
                 }
 
+                console.log("Message received:", data);
+            });
+            ably.channels.get(gameId).subscribe("maze", (msg) => {
+                let data = msg.data;
+                setMaze(data);
                 console.log("Message received:", data);
             });
 
             return () => {
                 console.log("Unsubscribing from previous channel", gameId, orientation);
                 ably.channels.get(gameId).unsubscribe(orientation);
+                ably.channels.get(gameId).unsubscribe("maze");
             }
         }
     }, [ably, gameId, orientation]);
