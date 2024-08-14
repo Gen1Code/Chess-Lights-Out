@@ -11,6 +11,7 @@ export function PlayButton() {
         setGameId,
         setGame,
         setMaze,
+        setMoves
     } = useContext(GameContext);
     const [response, setResponse] = useState(null);
 
@@ -91,6 +92,7 @@ export function PlayButton() {
                 } else {
                     let moves = response.moves;
                     //TODO: Apply the moves to the board history?
+                    setMoves(moves);
                 }
 
                 setGame(new Chess(board));

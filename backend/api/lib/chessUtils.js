@@ -574,7 +574,7 @@ export function possibleMoves(game, maze) {
     return filteredMoves;
 }
 
-export function makeMoveInMaze(move, game) {
+export function makeMoveInMaze(game, move) {
     let fen = game.fen().split(" ");
     let turn = game.turn();
     console.log("Old FEN", fen);
@@ -714,7 +714,7 @@ export function gameOverInMaze(game, maze, moves, mazeSetting) {
     }
 
     //If only 2 kings are left
-    let otherPieces = fen[0].replace("/[d/k]/gi", "");
+    let otherPieces = fen[0].replace(/[d/k]/gi, "");
     if (otherPieces === "") {
         return "Insufficient Material";
     }
@@ -723,6 +723,7 @@ export function gameOverInMaze(game, maze, moves, mazeSetting) {
         //threefold repetition
         let lastIdx = moves.length - 1;
         if (
+            lastIdx > 5 &&
             moves[lastIdx] === moves[lastIdx - 2] &&
             moves[lastIdx - 1] === moves[lastIdx - 3] &&
             moves[lastIdx] === moves[lastIdx - 4] &&

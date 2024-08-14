@@ -254,13 +254,13 @@ router.post("/move", async (req, res) => {
     }
 
     let turn = chessGame.turn();
-    let mazeIsOn = mazeSetting !== "Off";
 
     if (color !== turn) {
         return res.json({ message: "It's not your turn" });
     }
 
     let possMoves;
+    let mazeIsOn = mazeSetting !== "Off";
     let maze = JSON.parse(game.rows[0].maze);
 
     if (mazeIsOn) {
@@ -290,7 +290,7 @@ router.post("/move", async (req, res) => {
         }
         
         //TODO: check if this changes game state
-        makeMoveInMaze(chessGame, maze, matchingMove, mazeSetting);
+        makeMoveInMaze(chessGame, matchingMove);
 
         console.log("After Move", chessGame.fen());
     }else{

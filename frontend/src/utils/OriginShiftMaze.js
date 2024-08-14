@@ -567,19 +567,93 @@ export function attackingKingInMaze(game, maze) {
     return attackers;
 }
 
-export function makeMoveInMaze(move, game) {
-    let captured = game.get(move.to);
+export function makeMoveInMaze(game, move) {
     let fen = game.fen().split(" ");
-    fen[1] = fen[1] === "w" ? "b" : "w";
+    let turn = game.turn();
+    console.log("Old FEN", fen);
+
+    // Turn Change
+    fen[1] = turn === "w" ? "b" : "w";
+
+    //Castling
+    if (move.flags.includes("k")) {
+        if (move.to === "g1") {
+            fen[2] = fen[2].replace("K", "");
+        } else if (move.to === "c1") {
+            fen[2] = fen[2].replace("Q", "");
+        }
+    } else if (move.flags.includes("q")) {
+        if (move.to === "g8") {
+            fen[2] = fen[2].replace("k", "");
+        } else if (move.to === "c8") {
+            fen[2] = fen[2].replace("q", "");
+        }
+    } else if (move.piece === "k") {
+        if (move.to[1] <= 7) {
+            fen[2] = fen[2].replace("kq", "");
+        } else {
+            fen[2] = fen[2].replace("KQ", "");
+        }
+    }
+
+    // En passant
+    let enPassantSquare = fen[3];
+    if (move.flags.includes("b")) {
+        fen[3] =
+            move.from[0] +
+            (parseInt(move.from[1]) + (move.color === "w" ? 1 : -1));
+    } else {
+        fen[3] = "-";
+    }
+
+    //Half Move Clock
+    if (move.piece === "p" || !move.flags.includes("n")) {
+        fen[4] = 0;
+    } else {
+        fen[4] = parseInt(fen[4]) + 1;
+    }
+
+    //Full Move
+    if (turn === "b") {
+        fen[5] = parseInt(fen[5]) + 1;
+    }
+
+    console.log("Move", move);
+    console.log("New FEN w/o move", fen);
+
     game.load(fen.join(" "));
 
     game.remove(move.from);
     if (move.flags.includes("p")) {
-        game.put({ type: "q", color: move.color }, move.to);
+        game.put({ type: move.promotion, color: move.color }, move.to);
     } else {
         game.put({ type: move.piece, color: move.color }, move.to);
     }
-    return captured;
+
+    //Remove pawn if en passant
+    if (move.flags.includes("e")) {
+        game.remove(enPassantSquare);
+    } else if (move.flags.includes("k")) {
+        //King-side Castling
+        if (move.to === "g1") {
+            game.remove("h1");
+            game.put({ type: "r", color: move.color }, "f1");
+        } else if (move.to === "g8") {
+            game.remove("h8");
+            game.put({ type: "r", color: move.color }, "f8");
+        }
+    } else if (move.flags.includes("q")) {
+        //Queen-side Castling
+        if (move.to === "c1") {
+            game.remove("a1");
+            game.put({ type: "r", color: move.color }, "d1");
+        } else if (move.to === "c8") {
+            game.remove("a8");
+            game.put({ type: "r", color: move.color }, "d8");
+        }
+    }
+
+    console.log("New FEN w/ move", game.fen());
 }
 
 export function styleForMaze(styles, borders, orientation) {
@@ -626,21 +700,56 @@ export function styleForMaze(styles, borders, orientation) {
     return styles;
 }
 
-export function mazeGameOverMessage(game, maze) {
-    let moves = possibleMoves(game, maze);
-    if (moves.length === 0) {
-        let fen = game.fen().split(" ");
-        fen[1] = game.turn() === "w" ? "b" : "w";
-        let oppTurnGame = new Chess(fen.join(" "));
-        if (inCheckInMaze(game, maze) || inCheckInMaze(oppTurnGame, maze)) {
-            return "Checkmate!";
-        } else {
-            return "Stalemate!";
-        }
-    }else if(game.isInsufficientMaterial()){
-        return "Insufficient Material!";
-    }else {
-      console.error("Game over but no reason found");
-      return "Game Over!";
+export function gameOverMessageInMaze(game, maze, moves, mazeSetting) {
+    let fen = game.fen().split(" ");
+    fen[1] = game.turn() === "w" ? "b" : "w";
+    let oppTurnGame = new Chess(fen.join(" "));
+
+    if (inCheckInMaze(oppTurnGame, maze)) {
+        return fen[1] + "is in Checkmate";
     }
+
+    let possMoves = possibleMoves(game, maze);
+    if (possMoves.length === 0) {
+        if (inCheckInMaze(game, maze)) {
+            return game.turn() + "is in Checkmate";
+        }
+        return "Stalemate";
+    }
+
+    //If only 2 kings are left
+    let otherPieces = fen[0].replace(/[\d\/k]/gi, "");
+    console.log("Other Pieces", otherPieces);
+    if (otherPieces === "") {
+        return "Insufficient Material";
+    }
+
+    if (mazeSetting !== "Shift") {
+        //threefold repetition
+        let lastIdx = moves.length - 1;
+        if (
+            lastIdx > 5 &&
+            moves[lastIdx] === moves[lastIdx - 2] &&
+            moves[lastIdx - 1] === moves[lastIdx - 3] &&
+            moves[lastIdx] === moves[lastIdx - 4] &&
+            moves[lastIdx - 1] === moves[lastIdx - 5]
+        ) {
+            return "Threefold Repetition";
+        }
+
+        //50 move rule
+        if (fen[4] >= 100) {
+            return "Fifty Move Rule";
+        }
+    }
+
+    return "";
+}
+
+export function isGameOverInMaze(game, maze, moves, mazeSetting) {
+    let gameOverReason = gameOverMessageInMaze(game, maze, moves, mazeSetting);
+    if (gameOverReason !== "") {
+        return true;
+    }
+    return false;
 }

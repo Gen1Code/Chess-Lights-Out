@@ -1,7 +1,7 @@
 import React, { createContext, useEffect, useState } from "react";
 import { api } from "../utils/api";
 import { Chess } from "chess.js";
-import { getRandomMaze } from "@utils/maze";
+import { getRandomMaze } from "@utils/OriginShiftMaze";
 
 export const GameContext = createContext();
 
@@ -26,6 +26,7 @@ export const GameProvider = ({ children }) => {
 
     const [game, setGame] = useState(new Chess());
     const [maze, setMaze] = useState(() => getRandomMaze());
+    const [moves, setMoves] = useState([]);
 
     useEffect(() => {
         async function localId() {
@@ -57,6 +58,8 @@ export const GameProvider = ({ children }) => {
                 setGame,
                 maze,
                 setMaze,
+                moves,
+                setMoves,
             }}
         >
             {children}

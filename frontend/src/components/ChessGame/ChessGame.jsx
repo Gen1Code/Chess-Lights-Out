@@ -11,7 +11,9 @@ import {
     possibleMoves,
     inCheckInMaze,
     styleForMaze,
-    mazeGameOverMessage,
+    gameOverMessageInMaze,
+    isGameOverInMaze,
+    makeMoveInMaze,
 } from "@utils/OriginShiftMaze";
 import { styleForLightsOut, getLitupSquares } from "@utils/LightsOutUtils";
 import { gameOverMessage, findKing, SQUARES } from "@utils/ChessUtils";
@@ -28,6 +30,8 @@ export function ChessGame() {
         setGame,
         maze,
         setMaze,
+        moves,
+        setMoves,
     } = useContext(GameContext);
 
     let ably = useAbly();
@@ -35,8 +39,9 @@ export function ChessGame() {
         ably = null;
     }
 
+    const mazeSetting = currentGameSettings.maze;
     const singlePlayer = currentGameSettings.mode === "Single";
-    const mazeIsOn = currentGameSettings.maze !== "Off";
+    const mazeIsOn = mazeSetting !== "Off";
     const playing = currentGameSettings.status === "Playing";
     const orientation = currentGameSettings.color;
 
@@ -48,36 +53,37 @@ export function ChessGame() {
         ? inCheckInMaze(game, maze) && turn === orientation
         : game.inCheck() && turn === orientation;
     const isGameOver = mazeIsOn
-        ? detctGameOverMaze(game, maze)
+        ? isGameOverInMaze(game, maze, moves, mazeSetting)
         : game.isGameOver();
-
-    function detctGameOverMaze(game, maze) {
-        let moves = possibleMoves(game, maze);
-        return moves.length === 0 || game.isInsufficientMaterial();
-    }
 
     function makeAMove(move) {
         const gameCopy = new Chess();
 
         if (mazeIsOn) {
-            let validMove = false;
-            let moves = possibleMoves(game, maze);
-            for (let i = 0; i < moves.length; i++) {
-                if (moves[i].from === move.from && moves[i].to === move.to) {
-                    validMove = true;
+            gameCopy.load(game.fen());
+
+            let possMoves = possibleMoves(gameCopy, maze);
+            let matchingMove = null;
+            for (let i = 0; i < possMoves.length; i++) {
+                if (
+                    possMoves[i].from === move.from &&
+                    possMoves[i].to === move.to
+                ) {
+                    matchingMove = possMoves[i];
                     break;
                 }
             }
-            console.log("Move:", move);
-            console.log("Valid move:", validMove);
-            if (!validMove) {
+            if (matchingMove === null) {
+                console.log("Invalid move", move);
+                console.error(e);
                 return;
             }
-            let fen = game.fen().split(" ");
-            fen[1] = fen[1] === "w" ? "b" : "w";
-            gameCopy.load(fen.join(" "));
-            gameCopy.remove(move.from);
-            gameCopy.put({ type: move.piece, color: move.color }, move.to);
+
+            if (move.promotion !== undefined) {
+                matchingMove.promotion = move.promotion;
+            }
+
+            makeMoveInMaze(gameCopy, matchingMove);
         } else {
             gameCopy.loadPgn(game.pgn());
 
@@ -89,7 +95,9 @@ export function ChessGame() {
                 return;
             }
         }
-
+        let newMoves = moves;
+        newMoves.push(move.from + move.to + move.promotion);
+        setMoves(newMoves);
         setGame(gameCopy);
     }
 
@@ -97,10 +105,8 @@ export function ChessGame() {
         if (turn !== orientation || isGameOver || !playing) return;
 
         let move = {
-            color: piece[0],
             from: sourceSquare,
             to: targetSquare,
-            piece: piece[1].toLowerCase(),
             promotion: piece[1].toLowerCase(),
         };
 
@@ -109,14 +115,19 @@ export function ChessGame() {
 
     //Dev testing functions (remove when done)
     function forcegame() {
-        // let fen = "k7/6Q1/3N4/8/3b3q/8/8/5K2 ";
-        let fen = "8/PPPK4/8/8/8/8/4kppp/8 ";
-        if (orientation === "white") {
-            fen += "w";
-        } else {
-            fen += "b";
+        let fen;
+        // Checkmate Potential
+        // fen = "k7/6Q1/3N4/8/3b3q/8/8/5K2 w - - 0 40";
+        // Pawn Promotion
+        // fen = "8/PPPK4/8/8/8/8/4kppp/8 w - - 0 40";
+        // Insufficient Material
+        // fen = "k7/8/8/8/8/8/8/K7 w - - 0 1";
+        // About to be 50 move rule
+        fen = "kb6/8/8/8/8/8/8/K7 w - - 99 1";
+        if(orientation === "black") {
+            fen = fen.replace("w", "b");
         }
-        fen += " - - 0 40";
+        
         let g = new Chess();
         g.load(fen);
         setGame(g);
@@ -140,25 +151,14 @@ export function ChessGame() {
             const move = getBotMove(gameCopy, mazeCopy);
             if (!move) return;
 
+            console.log("Bot move:", move);
+
             if (mazeIsOn) {
-                let fen = g.fen().split(" ");
-                fen[1] = fen[1] === "w" ? "b" : "w";
-                gameCopy.load(fen.join(" "));
-                gameCopy.remove(move.from);
-                if (move.flags.includes("p")) {
-                    gameCopy.put(
-                        { type: move.promotion, color: move.color },
-                        move.to
-                    );
-                } else {
-                    gameCopy.put(
-                        { type: move.piece, color: move.color },
-                        move.to
-                    );
-                }
+                makeMoveInMaze(gameCopy, move);
             } else {
                 gameCopy.move(move);
             }
+            setMoves([...moves, move.from + move.to + move.promotion]);
             setGame(gameCopy);
         }
     }
@@ -196,7 +196,7 @@ export function ChessGame() {
 
         if (playing && singlePlayer) {
             // if maze is in shift mode, make shifts
-            if (currentGameSettings.maze === "Shift") {
+            if (mazeSetting === "Shift") {
                 setMaze(scramble(maze, 10));
             }
 
@@ -209,12 +209,6 @@ export function ChessGame() {
 
     // If something occurs that changes the board, style the squares
     useEffect(() => {
-        console.log(
-            "useEffect triggered with game and maze:",
-            game,
-            maze,
-            orientation
-        );
         styleSquares(game, maze, orientation);
     }, [maze, game, currentGameSettings]);
 
@@ -236,7 +230,7 @@ export function ChessGame() {
             if (mazeIsOn) {
                 setCurrentGameSettings((prev) => ({
                     ...prev,
-                    status: mazeGameOverMessage(game, maze),
+                    status: gameOverMessageInMaze(game, maze, moves, mazeSetting),
                 }));
             } else {
                 setCurrentGameSettings((prev) => ({
@@ -257,6 +251,7 @@ export function ChessGame() {
 
             setGame(newGame);
             setMaze(newMaze);
+            setMoves([]);
 
             // if it's the computer's turn first, trigger a mov
             if (orientation === "black" && singlePlayer) {
@@ -285,21 +280,18 @@ export function ChessGame() {
                         status: "Opponent resigned!",
                     }));
                 } else {
-                    let gameCopy = new Chess(game.fen());
-                    let fen = gameCopy.fen().split(" ");
-                    fen[1] = fen[1] === "w" ? "b" : "w";
-                    gameCopy.load(fen.join(" "));
-                    let piece = gameCopy.get(data.from);
-
+                    //TODO: DIfferentiate between moves and board updates depeending on if lights out is on
+                    let move = {
+                        from: data.subString(0, 2),
+                        to: data.subString(2, 4),
+                    }
+                    
                     // Check if the move is a promotion
-                    if (data.promotion !== "") {
-                        piece.type = data.promotion;
+                    if (data.length > 4) {
+                         move.promotion = data[4];
                     }
 
-                    gameCopy.remove(data.from);
-                    gameCopy.put(piece, data.to);
-
-                    setGame(gameCopy);
+                    makeAMove(move);
                 }
 
                 console.log("Message received:", data);
