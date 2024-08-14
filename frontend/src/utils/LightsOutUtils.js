@@ -1,6 +1,6 @@
 import { SQUARES, pawnSquareInFront, kingSurroundingSquares } from "@utils/ChessUtils";
 import { Chess } from "chess.js";
-import { attackingKingInMaze, possibleMoves } from "@utils/OriginShiftMaze";
+import { attackingKingInMaze, possibleMoves, attackingKing} from "@utils/OriginShiftMaze";
 
 export function styleForLightsOut(styles, litupSquares) {
     let squares = new Set(SQUARES);
@@ -61,18 +61,12 @@ export function getLitupSquares(game, maze, orientation) {
         });
     });
 
-    //If you are in check light up the checking pieces (change to .attackers() when new chess.js npm package is released)
-    if (maze !== null) {
-        let attackers = attackingKingInMaze(game, maze);
+    //If you are in check light up the checking pieces
+    if(game.inCheck()){
+        let attackers = maze === null ? attackingKing(game) : attackingKingInMaze(game, maze);
         attackers.forEach((attacker) => {
             squares.add(attacker);
         });
-    } else if (game.inCheck()) {
-        let lastMove = game.pgn().split(" ").pop();
-        // TODO: change from last piece moved to all pieces that can attack the king
-        let checkingPiece =
-            lastMove[lastMove.length - 3] + lastMove[lastMove.length - 2];
-        squares.add(checkingPiece);
     }
 
     return squares;

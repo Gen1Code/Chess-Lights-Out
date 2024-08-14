@@ -547,10 +547,6 @@ export function inCheckInMaze(game, maze) {
 export function attackingKingInMaze(game, maze) {
     let attackers = [];
 
-    if (!game.inCheck()) {
-        return attackers;
-    }
-
     let turn = game.turn();
     let kingSquare = findKing(game, turn);
 
@@ -559,6 +555,25 @@ export function attackingKingInMaze(game, maze) {
     let oppTurnGame = new Chess(fen.join(" "));
 
     let moves = piecesMovements(oppTurnGame, maze);
+    for (let i = 0; i < moves.length; i++) {
+        if (moves[i].to === kingSquare) {
+            attackers.push(moves[i].from);
+        }
+    }
+    return attackers;
+}
+
+export function attackingKing(game){
+    let attackers = [];
+
+    let turn = game.turn();
+    let kingSquare = findKing(game, turn);
+
+    let fen = game.fen().split(" ");
+    fen[1] = turn === "w" ? "b" : "w";
+    let oppTurnGame = new Chess(fen.join(" "));
+    
+    let moves = oppTurnGame.moves({ verbose: true });
     for (let i = 0; i < moves.length; i++) {
         if (moves[i].to === kingSquare) {
             attackers.push(moves[i].from);
