@@ -719,7 +719,6 @@ export function gameOverMessageInMaze(game, maze, moves, mazeSetting) {
 
     //If only 2 kings are left
     let otherPieces = fen[0].replace(/[\d\/k]/gi, "");
-    console.log("Other Pieces", otherPieces);
     if (otherPieces === "") {
         return "Insufficient Material";
     }

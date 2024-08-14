@@ -13,13 +13,13 @@ export function GameOverCard() {
     function resetGame() {
         if (currentGameSettings.mode === "Single") {
             let color = Math.random() > 0.5 ? "white" : "black";
-            setCurrentGameSettings((prev) => ({ ...prev, status: "Playing", color: color }));
+            setCurrentGameSettings((prev) => ({ ...prev, status: "Starting", color: color }));
         }
     }
 
     useEffect(() => {
         // console.log("status", status);
-        setIsVisible(currentGameSettings.status !== "Playing");
+        setIsVisible(currentGameSettings.status !== "Playing" && currentGameSettings.status !== "Starting");
     }, [currentGameSettings.status]);
 
     if (!isVisible || currentGameSettings.status === "Haven't started yet") {

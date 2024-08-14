@@ -43,6 +43,7 @@ export function ChessGame() {
     const singlePlayer = currentGameSettings.mode === "Single";
     const mazeIsOn = mazeSetting !== "Off";
     const playing = currentGameSettings.status === "Playing";
+    const justStarted = currentGameSettings.status === "Starting";
     const orientation = currentGameSettings.color;
 
     const [squareStyles, setSquareStyles] = useState({});
@@ -52,7 +53,9 @@ export function ChessGame() {
     const inCheck = mazeIsOn
         ? inCheckInMaze(game, maze) && turn === orientation
         : game.inCheck() && turn === orientation;
-    const isGameOver = mazeIsOn
+    const isGameOver = justStarted
+        ? false
+        : mazeIsOn
         ? isGameOverInMaze(game, maze, moves, mazeSetting)
         : game.isGameOver();
 
@@ -102,7 +105,7 @@ export function ChessGame() {
     }
 
     function onDrop(sourceSquare, targetSquare, piece) {
-        if (turn !== orientation || isGameOver || !playing) return;
+        if (turn !== orientation || !playing) return;
 
         let move = {
             from: sourceSquare,
@@ -124,10 +127,10 @@ export function ChessGame() {
         // fen = "k7/8/8/8/8/8/8/K7 w - - 0 1";
         // About to be 50 move rule
         fen = "kb6/8/8/8/8/8/8/K7 w - - 99 1";
-        if(orientation === "black") {
+        if (orientation === "black") {
             fen = fen.replace("w", "b");
         }
-        
+
         let g = new Chess();
         g.load(fen);
         setGame(g);
@@ -138,29 +141,27 @@ export function ChessGame() {
 
     function botMove(g = game, m = maze) {
         // console.log("botMove triggered with:", orientation, turn, mazeIsOn);
-        if (playing && singlePlayer) {
-            let mazeCopy = m;
-            let gameCopy = new Chess();
+        let mazeCopy = m;
+        let gameCopy = new Chess();
 
-            if (mazeIsOn) {
-                gameCopy.load(g.fen());
-            } else {
-                mazeCopy = null;
-                gameCopy.loadPgn(g.pgn());
-            }
-            const move = getBotMove(gameCopy, mazeCopy);
-            if (!move) return;
-
-            console.log("Bot move:", move);
-
-            if (mazeIsOn) {
-                makeMoveInMaze(gameCopy, move);
-            } else {
-                gameCopy.move(move);
-            }
-            setMoves([...moves, move.from + move.to + move.promotion]);
-            setGame(gameCopy);
+        if (mazeIsOn) {
+            gameCopy.load(g.fen());
+        } else {
+            mazeCopy = null;
+            gameCopy.loadPgn(g.pgn());
         }
+        const move = getBotMove(gameCopy, mazeCopy);
+        if (!move) return;
+
+        console.log("Bot move:", move);
+
+        if (mazeIsOn) {
+            makeMoveInMaze(gameCopy, move);
+        } else {
+            gameCopy.move(move);
+        }
+        setMoves([...moves, move.from + move.to + move.promotion]);
+        setGame(gameCopy);
     }
 
     function styleSquares(game, maze, orientation) {
@@ -192,20 +193,20 @@ export function ChessGame() {
 
     // On Turn Change
     useEffect(() => {
-        console.log("useEffect triggered with turn:", turn);
-
         if (playing && singlePlayer) {
+            console.log("turn triggered:", turn);
+
             // if maze is in shift mode, make shifts
             if (mazeSetting === "Shift") {
                 setMaze(scramble(maze, 10));
             }
 
             // if it's the computer's turn, make a move
-            if (turn !== orientation && !isGameOver) {
+            if (turn !== orientation) {
                 botMove();
             }
         }
-    }, [turn, currentGameSettings]);
+    }, [turn]);
 
     // If something occurs that changes the board, style the squares
     useEffect(() => {
@@ -223,14 +224,19 @@ export function ChessGame() {
         setCheckStyle(styles);
     }, [inCheck]);
 
-    // On Game Over
+    // on game over, set the status
     useEffect(() => {
-        if (isGameOver) {
+        if (isGameOver && playing) {
             console.log("Game over");
             if (mazeIsOn) {
                 setCurrentGameSettings((prev) => ({
                     ...prev,
-                    status: gameOverMessageInMaze(game, maze, moves, mazeSetting),
+                    status: gameOverMessageInMaze(
+                        game,
+                        maze,
+                        moves,
+                        mazeSetting
+                    ),
                 }));
             } else {
                 setCurrentGameSettings((prev) => ({
@@ -241,9 +247,11 @@ export function ChessGame() {
         }
     }, [isGameOver]);
 
-    // On Game Start
+    // On Status Change
     useEffect(() => {
-        if (currentGameSettings.status === "Playing") {
+        console.log("Status changed to:", currentGameSettings.status);
+
+        if (justStarted) {
             console.log("Game started");
 
             const newGame = new Chess();
@@ -257,6 +265,9 @@ export function ChessGame() {
             if (orientation === "black" && singlePlayer) {
                 botMove(newGame, newMaze);
             }
+            setCurrentGameSettings((prev) => ({ ...prev, status: "Playing" }));
+        } else if (currentGameSettings.status === "Haven't started yet") {
+            console.log("No Game has started yet");
         }
     }, [currentGameSettings.status]);
 
@@ -272,7 +283,7 @@ export function ChessGame() {
                 if (data === "Game is starting") {
                     setCurrentGameSettings((prev) => ({
                         ...prev,
-                        status: "Playing",
+                        status: "Starting",
                     }));
                 } else if (data === "Opponent resigned") {
                     setCurrentGameSettings((prev) => ({
@@ -284,11 +295,11 @@ export function ChessGame() {
                     let move = {
                         from: data.subString(0, 2),
                         to: data.subString(2, 4),
-                    }
-                    
+                    };
+
                     // Check if the move is a promotion
                     if (data.length > 4) {
-                         move.promotion = data[4];
+                        move.promotion = data[4];
                     }
 
                     makeAMove(move);
@@ -322,10 +333,10 @@ export function ChessGame() {
                 onPieceDrop={onDrop}
                 boardOrientation={orientation}
                 isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
-                arePiecesDraggable={!isGameOver}
+                arePiecesDraggable={playing}
                 customSquareStyles={{ ...squareStyles, ...checkStyle }}
             />
-            {playing === false && <div className="mist-overlay"></div>}
+            {!playing && <div className="mist-overlay"></div>}
             <GameOverCard className="card" />
             {process.env.NODE_ENV === "development" && (
                 <>

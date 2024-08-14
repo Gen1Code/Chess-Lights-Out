@@ -23,7 +23,7 @@ export function PlayButton() {
             let color = Math.random() > 0.5 ? "white" : "black";
             setCurrentGameSettings({
                 ...settings,
-                status: "Playing",
+                status: "Starting",
                 gameId: "",
                 color: color,
             });
@@ -53,7 +53,7 @@ export function PlayButton() {
                     ...settings,
                     gameId: response.gameId,
                     color: response.color,
-                    status: "Playing",
+                    status: "Starting",
                 });
             } else if (message === "Resigned") {
                 setCurrentGameSettings((prev) => ({
