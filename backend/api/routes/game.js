@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import db from "../lib/database.js";
 import { publish, getMessageFromQueue } from "../lib/pubsub.js";
-import { possibleMoves, scramble, getRandomMaze } from "../lib/chessUtils.js";
+import { possibleMoves, scramble, getRandomMaze, gameOverInMaze } from "../lib/chessUtils.js";
 import { Chess } from "chess.js";
 
 dotenv.config();
@@ -313,10 +313,12 @@ router.post("/move", async (req, res) => {
 
     // TODO: figure out threefold repetition based on moves
     let gameIsOver = false;
+    let gameOverMessage = "";
     if (mazeIsOn) {
-        //TODO: check if the game is over accounting for the maze
+        gameOverMessage = gameOverInMaze(chessGame, newMaze, moves, mazeSetting);
+        gameIsOver = gameOverMessage !== "";
     } else {
-        gameIsOver = chessGame.isGameOver(); //TODO: threefold repetition + 50 move rule need to be implemented
+        gameIsOver = chessGame.isGameOver();
     }
 
     let statusSetInQuery = gameIsOver ? ", status = 'finished'" : "";

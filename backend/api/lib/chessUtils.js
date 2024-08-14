@@ -533,3 +533,71 @@ export function scramble(maze, n) {
 
     return newMaze;
 }
+
+export function gameOverInMaze(game, maze, moves, mazeSetting) {
+    let fen = game.fen().split(" ");
+    fen[1] = game.turn() === "w" ? "b" : "w";
+    let oppTurnGame = new Chess(fen.join(" "));
+
+    if (inCheckInMaze(oppTurnGame, maze)) {
+        return fen[1] + "is in Checkmate";
+    }
+
+    let possMoves = possibleMoves(game, maze);
+    if (possMoves.length === 0) {
+        if (inCheckInMaze(game, maze)) {
+            return game.turn() + "is in Checkmate";
+        }
+        return "Stalemate";
+    }
+
+    //If only 2 kings are left
+    let otherPieces = fen[0].replace("/[d/k]/gi", "");
+    if (otherPieces === "") {
+        return "Insufficient Material";
+    }
+
+    if (mazeSetting !== "Shift") {
+        //threefold repetition
+        let lastIdx = moves.length - 1;
+        if (
+            moves[lastIdx] === moves[lastIdx - 2] &&
+            moves[lastIdx - 1] === moves[lastIdx - 3] &&
+            moves[lastIdx] === moves[lastIdx - 4] &&
+            moves[lastIdx - 1] === moves[lastIdx - 5]
+        ) {
+            return "Threefold Repetition";
+        }
+
+        //50 move rule (TODO: add captures in this by looking up instead of down)
+        let fiftyMoveRule = true;
+        if (lastIdx >= 50) {
+            let board = game.board();
+            for (let i = moves.length - 1; i >= moves.length - 50; i--) {
+                let move = moves[i];
+                let from = move.substring(0, 2);
+                let to = move.substring(2, 4);
+
+                // If there's a promotion, it's a pawn move
+                if (move.length > 4) {
+                    fiftyMoveRule = false;
+                    break;
+                }
+                
+                let pieceMoved = board.get(to);
+                
+                // Check if the move is a pawn move
+                if (pieceMoved.type === 'p') {
+                    fiftyMoveRule = false;
+                    break;
+                }               
+                
+            }
+        }
+        if (fiftyMoveRule) {
+            return "Fifty Move Rule";
+        }
+    }
+
+    return "";
+}
