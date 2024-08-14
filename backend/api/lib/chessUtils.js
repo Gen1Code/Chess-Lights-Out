@@ -96,7 +96,7 @@ function piecesMovements(game, maze) {
     let tree = maze.tree;
     let pawnDirection = turn === "w" ? -1 : 1;
 
-    let moves = []; // {from: "a1", to: "a2", piece: "p", color: "w"}
+    let moves = []; // {from: "a1", to: "a2", piece: "p", color: "w", flags: "n"}
     for (let row = 0; row < board.length; row++) {
         for (let col = 0; col < board[row].length; col++) {
             if (board[row][col] && board[row][col].color === turn) {
@@ -478,78 +478,44 @@ function piecesMovements(game, maze) {
                                 });
                             }
                         }
+
                         //Castling
                         let castleRights = game.getCastlingRights(turn);
-                        if (turn === "w" && row === 7 && col === 4) {
+                        let rank = turn === "w" ? 7 : 0;
+                        if (col == 4 && row === rank) {
                             if (
-                                board[7][7] &&
-                                board[7][7].type === "r" &&
-                                board[7][7].color === "w" &&
-                                board[7][5] === null &&
-                                board[7][6] === null &&
                                 castleRights["k"] &&
-                                canStraight(tree, 7, 4, 7, 7)
+                                board[rank][7] &&
+                                board[rank][7].type === "r" &&
+                                board[rank][7].color === turn &&
+                                board[rank][5] === null &&
+                                board[rank][6] === null &&
+                                canStraight(tree, rank, 4, rank, 7)
                             ) {
                                 moves.push({
-                                    from: SQUARES[7 * 8 + 4],
-                                    to: SQUARES[7 * 8 + 6],
+                                    from: SQUARES[rank * 8 + 4],
+                                    to: SQUARES[rank * 8 + 6],
                                     piece: "k",
                                     color: turn,
-                                    flags: "k",
+                                    flags: "nk",
                                 });
                             }
                             if (
-                                board[7][0] &&
-                                board[7][0].type === "r" &&
-                                board[7][0].color === "w" &&
-                                board[7][1] === null &&
-                                board[7][2] === null &&
-                                board[7][3] === null &&
                                 castleRights["q"] &&
-                                canStraight(tree, 7, 4, 7, 0)
+                                board[rank][0] &&
+                                board[rank][0].type === "r" &&
+                                board[rank][0].color === turn &&
+                                board[rank][1] === null &&
+                                board[rank][2] === null &&
+                                board[rank][3] === null &&
+                                canStraight(tree, rank, 4, rank, 0)
                             ) {
                                 moves.push({
-                                    from: SQUARES[7 * 8 + 4],
-                                    to: SQUARES[7 * 8 + 2],
+                                    from: SQUARES[rank * 8 + 4],
+                                    to: SQUARES[rank * 8 + 2],
                                     piece: "k",
                                     color: turn,
-                                    flags: "q",
-                                });
-                            }
-                        } else if (turn === "b" && row === 0 && col === 4) {
-                            if (
-                                board[0][7] &&
-                                board[0][7].type === "r" &&
-                                board[0][7].color === "b" &&
-                                board[0][5] === null &&
-                                board[0][6] === null &&
-                                castleRights["k"] &&
-                                canStraight(tree, 0, 4, 0, 7)
-                            ) {
-                                moves.push({
-                                    from: SQUARES[0 * 8 + 4],
-                                    to: SQUARES[0 * 8 + 6],
-                                    piece: "k",
-                                    color: turn,
-                                    flags: "k",
-                                });
-                            }
-                            if (
-                                board[0][0] &&
-                                board[0][0].type === "r" &&
-                                board[0][0].color === "b" &&
-                                board[0][1] === null &&
-                                board[0][2] === null &&
-                                board[0][3] === null &&
-                                castleRights["q"] &&
-                                canStraight(tree, 0, 4, 0, 0)
-                            ) {
-                                moves.push({
-                                    from: SQUARES[0 * 8 + 4],
-                                    to: SQUARES[0 * 8 + 2],
-                                    piece: "k",
-                                    color: turn,
-                                    flags: "q",
+                                    flags: "nq",
                                 });
                             }
                         }
@@ -629,7 +595,7 @@ export function makeMoveInMaze(move, game) {
         } else if (move.to === "c8") {
             fen[2] = fen[2].replace("q", "");
         }
-    } else if (piece === "k") {
+    } else if (move.piece === "k") {
         if (move.to[1] <= 7) {
             fen[2] = fen[2].replace("kq", "");
         } else {
@@ -638,6 +604,7 @@ export function makeMoveInMaze(move, game) {
     }
 
     // En passant
+    let enPassantSquare = fen[3];
     if (move.flags.includes("b")) {
         fen[3] =
             move.from[0] +
@@ -659,19 +626,41 @@ export function makeMoveInMaze(move, game) {
     }
 
     console.log("Move", move);
-    console.log("New FEN", fen);
+    console.log("New FEN w/o move", fen);
 
     game.load(fen.join(" "));
 
-    let captured = game.get(move.to);
     game.remove(move.from);
     if (move.flags.includes("p")) {
         game.put({ type: move.promotion, color: move.color }, move.to);
     } else {
         game.put({ type: move.piece, color: move.color }, move.to);
     }
-    
-    return captured;
+
+    //Remove pawn if en passant
+    if (move.flags.includes("e")) {
+        game.remove(enPassantSquare);
+    } else if (move.flags.includes("k")) {
+        //King-side Castling
+        if (move.to === "g1") {
+            game.remove("h1");
+            game.put({ type: "r", color: move.color }, "f1");
+        } else if (move.to === "g8") {
+            game.remove("h8");
+            game.put({ type: "r", color: move.color }, "f8");
+        }
+    } else if (move.flags.includes("q")) {
+        //Queen-side Castling
+        if (move.to === "c1") {
+            game.remove("a1");
+            game.put({ type: "r", color: move.color }, "d1");
+        } else if (move.to === "c8") {
+            game.remove("a8");
+            game.put({ type: "r", color: move.color }, "d8");
+        }
+    }
+
+    console.log("New FEN w/ move", game.fen());
 }
 
 export function getRandomMaze() {

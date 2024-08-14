@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import db from "../lib/database.js";
 import { publish, getMessageFromQueue } from "../lib/pubsub.js";
-import { possibleMoves, scramble, getRandomMaze, gameOverInMaze } from "../lib/chessUtils.js";
+import { possibleMoves, scramble, getRandomMaze, gameOverInMaze, makeMoveInMaze } from "../lib/chessUtils.js";
 import { Chess } from "chess.js";
 
 dotenv.config();
@@ -264,42 +264,35 @@ router.post("/move", async (req, res) => {
     let maze = JSON.parse(game.rows[0].maze);
 
     if (mazeIsOn) {
-        // TODO: figure out castling and en passant
         possMoves = possibleMoves(game, maze);
     } else {
         possMoves = chessGame.moves({ verbose: true });
     }
 
-    let validMove = false;
+    let matchingMove = null;
     for (let i = 0; i < possMoves.length; i++) {
         if (possMoves[i].from === move.from && possMoves[i].to === move.to) {
-            validMove = true;
+            matchingMove = possMoves[i];
             break;
         }
     }
 
-    if (!validMove) {
+    if (matchingMove === null) {
         return res.json({ message: "Invalid move" });
     }
 
     moves.push(move.from + move.to + move.promotion);
 
-    // TODO: Check if the move is a castle and update the rook position + remove the castling rights
-    // TODO: check if king is moved and remove castling rights
-    // TODO: check if the move is en passant and remove the captured pawn
     if (mazeIsOn) {
-        let fen = chessGame.fen().split(" ");
-        fen[1] = fen[1] === "w" ? "b" : "w";
-        chessGame.load(fen.join(" "));
-        let piece = chessGame.get(move.from);
-    
-        // Check if the move is a promotion
-        if (move.promotion !== "") {
-            piece.type = move.promotion;
+        // If promotion is defined, add it to the move
+        if(move.promotion !== undefined){
+            matchingMove.promotion = move.promotion;
         }
-    
-        chessGame.remove(move.from);
-        chessGame.put(piece, move.to);
+        
+        //TODO: check if this changes game state
+        makeMoveInMaze(chessGame, maze, matchingMove, mazeSetting);
+
+        console.log("After Move", chessGame.fen());
     }else{
         chessGame.move(move);
     }
