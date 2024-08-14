@@ -193,6 +193,37 @@ function piecesMovements(game, maze) {
                                     row === (turn === "w" ? 1 : 6) ? "cp" : "c",
                             });
                         }
+
+                        //En passant
+                        let possibleEnPassant = game.fen().split(" ")[3];
+                        if (possibleEnPassant !== "-") {
+                            let index = SQUARES.indexOf(possibleEnPassant);
+                            let enPassantRow = Math.floor(index / 8);
+                            let enPassantCol = index % 8;
+                            if (
+                                enPassantRow === row + pawnDirection &&
+                                (enPassantCol === col - 1 ||
+                                    enPassantCol === col + 1) &&
+                                canDiagonal(
+                                    tree,
+                                    row,
+                                    col,
+                                    enPassantRow,
+                                    enPassantCol
+                                )
+                            ) {
+                                moves.push({
+                                    from: SQUARES[row * 8 + col],
+                                    to: SQUARES[
+                                        enPassantRow * 8 + enPassantCol
+                                    ],
+                                    piece: "p",
+                                    color: turn,
+                                    flags: "e",
+                                });
+                            }
+                        }
+
                         break;
                     case "r":
                         const axisDirections = [
@@ -447,6 +478,82 @@ function piecesMovements(game, maze) {
                                 });
                             }
                         }
+                        //Castling
+                        let castleRights = game.getCastlingRights(turn);
+                        if (turn === "w" && row === 7 && col === 4) {
+                            if (
+                                board[7][7] &&
+                                board[7][7].type === "r" &&
+                                board[7][7].color === "w" &&
+                                board[7][5] === null &&
+                                board[7][6] === null &&
+                                castleRights["k"] &&
+                                canStraight(tree, 7, 4, 7, 7)
+                            ) {
+                                moves.push({
+                                    from: SQUARES[7 * 8 + 4],
+                                    to: SQUARES[7 * 8 + 6],
+                                    piece: "k",
+                                    color: turn,
+                                    flags: "k",
+                                });
+                            }
+                            if (
+                                board[7][0] &&
+                                board[7][0].type === "r" &&
+                                board[7][0].color === "w" &&
+                                board[7][1] === null &&
+                                board[7][2] === null &&
+                                board[7][3] === null &&
+                                castleRights["q"] &&
+                                canStraight(tree, 7, 4, 7, 0)
+                            ) {
+                                moves.push({
+                                    from: SQUARES[7 * 8 + 4],
+                                    to: SQUARES[7 * 8 + 2],
+                                    piece: "k",
+                                    color: turn,
+                                    flags: "q",
+                                });
+                            }
+                        } else if (turn === "b" && row === 0 && col === 4) {
+                            if (
+                                board[0][7] &&
+                                board[0][7].type === "r" &&
+                                board[0][7].color === "b" &&
+                                board[0][5] === null &&
+                                board[0][6] === null &&
+                                castleRights["k"] &&
+                                canStraight(tree, 0, 4, 0, 7)
+                            ) {
+                                moves.push({
+                                    from: SQUARES[0 * 8 + 4],
+                                    to: SQUARES[0 * 8 + 6],
+                                    piece: "k",
+                                    color: turn,
+                                    flags: "k",
+                                });
+                            }
+                            if (
+                                board[0][0] &&
+                                board[0][0].type === "r" &&
+                                board[0][0].color === "b" &&
+                                board[0][1] === null &&
+                                board[0][2] === null &&
+                                board[0][3] === null &&
+                                castleRights["q"] &&
+                                canStraight(tree, 0, 4, 0, 0)
+                            ) {
+                                moves.push({
+                                    from: SQUARES[0 * 8 + 4],
+                                    to: SQUARES[0 * 8 + 2],
+                                    piece: "k",
+                                    color: turn,
+                                    flags: "q",
+                                });
+                            }
+                        }
+
                         break;
                 }
             }
@@ -499,6 +606,72 @@ export function possibleMoves(game, maze) {
     // console.log("All Possible Moves in Maze (filtered)", filteredMoves);
 
     return filteredMoves;
+}
+
+export function makeMoveInMaze(move, game) {
+    let fen = game.fen().split(" ");
+    let turn = game.turn();
+    console.log("Old FEN", fen);
+
+    // Turn Change
+    fen[1] = turn === "w" ? "b" : "w";
+
+    //Castling
+    if (move.flags.includes("k")) {
+        if (move.to === "g1") {
+            fen[2] = fen[2].replace("K", "");
+        } else if (move.to === "c1") {
+            fen[2] = fen[2].replace("Q", "");
+        }
+    } else if (move.flags.includes("q")) {
+        if (move.to === "g8") {
+            fen[2] = fen[2].replace("k", "");
+        } else if (move.to === "c8") {
+            fen[2] = fen[2].replace("q", "");
+        }
+    } else if (piece === "k") {
+        if (move.to[1] <= 7) {
+            fen[2] = fen[2].replace("kq", "");
+        } else {
+            fen[2] = fen[2].replace("KQ", "");
+        }
+    }
+
+    // En passant
+    if (move.flags.includes("b")) {
+        fen[3] =
+            move.from[0] +
+            (parseInt(move.from[1]) + (move.color === "w" ? 1 : -1));
+    } else {
+        fen[3] = "-";
+    }
+
+    //Half Move Clock
+    if (move.piece === "p" || move.flags.includes("c")) {
+        fen[4] = 0;
+    } else {
+        fen[4] = parseInt(fen[4]) + 1;
+    }
+
+    //Full Move
+    if (turn === "b") {
+        fen[5] = parseInt(fen[5]) + 1;
+    }
+
+    console.log("Move", move);
+    console.log("New FEN", fen);
+
+    game.load(fen.join(" "));
+
+    let captured = game.get(move.to);
+    game.remove(move.from);
+    if (move.flags.includes("p")) {
+        game.put({ type: move.promotion, color: move.color }, move.to);
+    } else {
+        game.put({ type: move.piece, color: move.color }, move.to);
+    }
+    
+    return captured;
 }
 
 export function getRandomMaze() {
@@ -583,15 +756,14 @@ export function gameOverInMaze(game, maze, moves, mazeSetting) {
                     fiftyMoveRule = false;
                     break;
                 }
-                
+
                 let pieceMoved = board.get(to);
-                
+
                 // Check if the move is a pawn move
-                if (pieceMoved.type === 'p') {
+                if (pieceMoved.type === "p") {
                     fiftyMoveRule = false;
                     break;
-                }               
-                
+                }
             }
         }
         if (fiftyMoveRule) {

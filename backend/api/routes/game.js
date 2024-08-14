@@ -311,7 +311,6 @@ router.post("/move", async (req, res) => {
         newMaze = scramble(maze, 10);
     }
 
-    // TODO: figure out threefold repetition based on moves
     let gameIsOver = false;
     let gameOverMessage = "";
     if (mazeIsOn) {
