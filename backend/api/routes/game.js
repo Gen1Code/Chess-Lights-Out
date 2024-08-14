@@ -3,7 +3,13 @@ import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import db from "../lib/database.js";
 import { publish, getMessageFromQueue } from "../lib/pubsub.js";
-import { possibleMoves, scramble, getRandomMaze, gameOverInMaze, makeMoveInMaze } from "../lib/chessUtils.js";
+import {
+    possibleMoves,
+    scramble,
+    getRandomMaze,
+    gameOverInMaze,
+    makeMoveInMaze,
+} from "../lib/chessUtils.js";
 import { Chess } from "chess.js";
 
 dotenv.config();
@@ -246,10 +252,10 @@ router.post("/move", async (req, res) => {
     let moves = JSON.parse(game.rows[0].moves);
     let mazeSetting = game.rows[0].maze_setting;
 
-    let chessGame; 
-    if(mazeIsOn){
+    let chessGame;
+    if (mazeIsOn) {
         chessGame = new Chess(board);
-    }else{
+    } else {
         chessGame = new Chess().loadPgn(moves.join(" ")); // TODO: check if this works might need to add turn numbers
     }
 
@@ -281,19 +287,21 @@ router.post("/move", async (req, res) => {
         return res.json({ message: "Invalid move" });
     }
 
-    moves.push(move.from + move.to + move.promotion);
+    let moveString = move.from + move.to;
+    moveString += move.promotion ? move.promotion : "";
+
+    moves.push(moveString);
 
     if (mazeIsOn) {
         // If promotion is defined, add it to the move
-        if(move.promotion !== undefined){
+        if (move.promotion !== undefined) {
             matchingMove.promotion = move.promotion;
         }
-        
-        //TODO: check if this changes game state
+
         makeMoveInMaze(chessGame, matchingMove);
 
         console.log("After Move", chessGame.fen());
-    }else{
+    } else {
         chessGame.move(move);
     }
 
@@ -307,7 +315,12 @@ router.post("/move", async (req, res) => {
     let gameIsOver = false;
     let gameOverMessage = "";
     if (mazeIsOn) {
-        gameOverMessage = gameOverInMaze(chessGame, newMaze, moves, mazeSetting);
+        gameOverMessage = gameOverInMaze(
+            chessGame,
+            newMaze,
+            moves,
+            mazeSetting
+        );
         gameIsOver = gameOverMessage !== "";
     } else {
         gameIsOver = chessGame.isGameOver();

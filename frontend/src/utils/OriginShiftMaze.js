@@ -570,7 +570,6 @@ export function attackingKingInMaze(game, maze) {
 export function makeMoveInMaze(game, move) {
     let fen = game.fen().split(" ");
     let turn = game.turn();
-    console.log("Old FEN", fen);
 
     // Turn Change
     fen[1] = turn === "w" ? "b" : "w";
@@ -618,9 +617,6 @@ export function makeMoveInMaze(game, move) {
         fen[5] = parseInt(fen[5]) + 1;
     }
 
-    console.log("Move", move);
-    console.log("New FEN w/o move", fen);
-
     game.load(fen.join(" "));
 
     game.remove(move.from);
@@ -653,7 +649,6 @@ export function makeMoveInMaze(game, move) {
         }
     }
 
-    console.log("New FEN w/ move", game.fen());
 }
 
 export function styleForMaze(styles, borders, orientation) {
@@ -706,13 +701,13 @@ export function gameOverMessageInMaze(game, maze, moves, mazeSetting) {
     let oppTurnGame = new Chess(fen.join(" "));
 
     if (inCheckInMaze(oppTurnGame, maze)) {
-        return fen[1] + "is in Checkmate";
+        return (fen[1] === "w" ? "White" : "Black") + " is in Checkmate";
     }
 
     let possMoves = possibleMoves(game, maze);
     if (possMoves.length === 0) {
         if (inCheckInMaze(game, maze)) {
-            return game.turn() + "is in Checkmate";
+            return (game.turn() === "w" ? "White" : "Black") + " is in Checkmate";
         }
         return "Stalemate";
     }

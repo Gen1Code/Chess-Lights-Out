@@ -343,7 +343,6 @@ function makeBestMove(game, color, maze) {
 export function getBotMove(game, maze) {
     let gameCopy = new Chess(game.fen());
     let bMove = makeBestMove(gameCopy, gameCopy.turn(), maze);
-    console.log("Bot move: ", bMove);
     return bMove;
 }
 

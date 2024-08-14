@@ -78,7 +78,6 @@ export function ChessGame() {
             }
             if (matchingMove === null) {
                 console.log("Invalid move", move);
-                console.error(e);
                 return;
             }
 
@@ -99,7 +98,10 @@ export function ChessGame() {
             }
         }
         let newMoves = moves;
-        newMoves.push(move.from + move.to + move.promotion);
+        let moveString = move.from + move.to;
+        moveString += move.promotion ? move.promotion : "";
+        console.log("Your move made:", moveString);
+        newMoves.push(moveString);
         setMoves(newMoves);
         setGame(gameCopy);
     }
@@ -110,8 +112,12 @@ export function ChessGame() {
         let move = {
             from: sourceSquare,
             to: targetSquare,
-            promotion: piece[1].toLowerCase(),
         };
+
+        //Only add the piece to the move if it's a pawn promotion
+        if (game.get(sourceSquare).type !== piece[1].toLowerCase()) {
+            move.promotion = piece[1].toLowerCase();
+        }
 
         makeAMove(move);
     }
@@ -122,11 +128,18 @@ export function ChessGame() {
         // Checkmate Potential
         // fen = "k7/6Q1/3N4/8/3b3q/8/8/5K2 w - - 0 40";
         // Pawn Promotion
-        // fen = "8/PPPK4/8/8/8/8/4kppp/8 w - - 0 40";
+        fen = "8/PPPK4/8/8/8/8/4kppp/8 w - - 0 40";
         // Insufficient Material
         // fen = "k7/8/8/8/8/8/8/K7 w - - 0 1";
         // About to be 50 move rule
-        fen = "kb6/8/8/8/8/8/8/K7 w - - 99 1";
+        // fen = "kb6/8/8/8/8/8/8/K7 w - - 99 1";
+        // Stalemate Potential
+        // fen = "5K2/5P1k/7p/7P/8/8/8/6R1 w - - 0 1";
+        // threefold repetition
+        // fen = "1K6/8/2q5/2b5/3N4/4BQ2/7k/8 w - - 0 1";
+        // Maze threefold repetition
+        // fen = "8/2K5/8/8/7N/8/3N4/7k w - - 0 1";
+
         if (orientation === "black") {
             fen = fen.replace("w", "b");
         }
@@ -153,14 +166,17 @@ export function ChessGame() {
         const move = getBotMove(gameCopy, mazeCopy);
         if (!move) return;
 
-        console.log("Bot move:", move);
 
         if (mazeIsOn) {
             makeMoveInMaze(gameCopy, move);
         } else {
             gameCopy.move(move);
         }
-        setMoves([...moves, move.from + move.to + move.promotion]);
+
+        let moveString = move.from + move.to;
+        moveString += move.promotion ? move.promotion : "";
+        console.log("Bot move made:", moveString);
+        setMoves([...moves, moveString]);
         setGame(gameCopy);
     }
 
