@@ -614,7 +614,7 @@ export function makeMoveInMaze(move, game) {
     }
 
     //Half Move Clock
-    if (move.piece === "p" || move.flags.includes("c")) {
+    if (move.piece === "p" || !move.flags.includes("n")) {
         fen[4] = 0;
     } else {
         fen[4] = parseInt(fen[4]) + 1;
@@ -731,31 +731,8 @@ export function gameOverInMaze(game, maze, moves, mazeSetting) {
             return "Threefold Repetition";
         }
 
-        //50 move rule (TODO: add captures in this by looking up instead of down)
-        let fiftyMoveRule = true;
-        if (lastIdx >= 50) {
-            let board = game.board();
-            for (let i = moves.length - 1; i >= moves.length - 50; i--) {
-                let move = moves[i];
-                let from = move.substring(0, 2);
-                let to = move.substring(2, 4);
-
-                // If there's a promotion, it's a pawn move
-                if (move.length > 4) {
-                    fiftyMoveRule = false;
-                    break;
-                }
-
-                let pieceMoved = board.get(to);
-
-                // Check if the move is a pawn move
-                if (pieceMoved.type === "p") {
-                    fiftyMoveRule = false;
-                    break;
-                }
-            }
-        }
-        if (fiftyMoveRule) {
+        //50 move rule
+        if (fen[4] >= 100) {
             return "Fifty Move Rule";
         }
     }
