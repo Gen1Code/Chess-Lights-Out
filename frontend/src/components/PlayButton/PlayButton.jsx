@@ -91,7 +91,6 @@ export function PlayButton() {
                     //TODO: DO stuff to make the board only show the lit up squares
                 } else {
                     let moves = response.moves;
-                    //TODO: Apply the moves to the board history?
                     setMoves(moves);
                 }
 

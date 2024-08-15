@@ -307,18 +307,29 @@ export function ChessGame() {
                         status: "Opponent resigned!",
                     }));
                 } else {
-                    //TODO: DIfferentiate between moves and board updates depeending on if lights out is on
-                    let move = {
-                        from: data.subString(0, 2),
-                        to: data.subString(2, 4),
-                    };
+                    if(currentGameSettings.lightsOut){
+                        let visibleBoard = data;
+                        let gameRep = new Chess();
+                        gameRep.clear();
+                        visibleBoard.forEach((square) => {
+                            gameRep.put({ type: square.piece, color: square.color }, square.square);
+                        });
+                        
+                        setGame(gameRep);
 
-                    // Check if the move is a promotion
-                    if (data.length > 4) {
-                        move.promotion = data[4];
+                    }else{
+                        let move = {
+                            from: data.subString(0, 2),
+                            to: data.subString(2, 4),
+                        };
+    
+                        // Check if the move is a promotion
+                        if (data.length > 4) {
+                            move.promotion = data[4];
+                        }
+    
+                        makeAMove(move);
                     }
-
-                    makeAMove(move);
                 }
 
                 console.log("Message received:", data);

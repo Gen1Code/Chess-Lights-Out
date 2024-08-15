@@ -9,6 +9,8 @@ import {
     getRandomMaze,
     gameOverInMaze,
     makeMoveInMaze,
+    getLitupSquares,
+    gameOverMessage
 } from "../lib/chessUtils.js";
 import { Chess } from "chess.js";
 
@@ -30,7 +32,7 @@ async function createGame(gameId, userId, color, settings) {
 
         return true;
     } catch (err) {
-        console.error("Failed to create game");
+        console.error("Failed to create game:", err);
     }
     return false;
 }
@@ -161,14 +163,20 @@ router.post("/get", async (req, res) => {
     // If the game is lights out, return the viewable board
     if (gameLightsOutSetting) {
         let mazeObj = JSON.parse(gameMaze);
-        //TODO: change the board to only show the correct litup squares
-        let boardToSend = gameBoard;
+
+        let visibleSquares = getLitupSquares(new Chess(gameBoard), mazeObj, color);
+        let visibleBoard = [];
+        let board = new Chess(gameBoard).board();
+        visibleSquares.forEach((square) => {
+            visibleBoard.push(board[square]);
+        });
+
         return res.json({
             message: "Game",
             color: color,
             gameId: gameId,
             status: gameStatus,
-            board: boardToSend,
+            board: visibleBoard,
             lightsOutSetting: gameLightsOutSetting,
             maze: gameMaze,
             mazeSetting: gameMazeSetting,
@@ -324,6 +332,7 @@ router.post("/move", async (req, res) => {
         gameIsOver = gameOverMessage !== "";
     } else {
         gameIsOver = chessGame.isGameOver();
+        gameOverMessage = gameOverMessage(chessGame);
     }
 
     let statusSetInQuery = gameIsOver ? ", status = 'finished'" : "";
@@ -338,15 +347,39 @@ router.post("/move", async (req, res) => {
     // Update the database
     await db.query(updateQuery, updateParams);
 
-    // TODO: For each player:
-    // TODO: if lights out, publish visible board for player
+    let lightsOutSetting = game.rows[0].lights_out_setting;
+    if (lightsOutSetting) {
+        let blackLitupSquares = getLitupSquares(chessGame, newMaze, "black");
+        let whiteLitupSquares = getLitupSquares(chessGame, newMaze, "white");
+        let board = chessGame.board();
 
-    // Publish the move to the game channel (TODO: for now)
-    publish(gameId, otherColor, move);
+        let blackVisibleBoard = [];
+        let whiteVisibleBoard = [];
+
+        blackLitupSquares.forEach((square) => {
+            blackVisibleBoard.push(board[square]);
+        });
+
+        whiteLitupSquares.forEach((square) => {
+            whiteVisibleBoard.push(board[square]);
+        });
+
+        publish(gameId, "black", blackVisibleBoard);
+        publish(gameId, "white", whiteVisibleBoard);
+    } else {
+        // Publish the move to the game channel
+        publish(gameId, otherColor, move);
+    }
 
     // Publish the new maze if it was shifted
     if (mazeSetting === "Shift") {
         publish(gameId, "maze", newMaze);
+    }
+
+    // // If the game is over, publish the game over message
+    if (gameIsOver) {
+        publish(gameId, "black", gameOverMessage);
+        publish(gameId, "white", gameOverMessage);
     }
 
     res.json({ message: "Move sent" });

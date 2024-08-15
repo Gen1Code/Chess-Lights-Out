@@ -34,7 +34,7 @@ async function setupDatabase() {
           maze TEXT DEFAULT '{}',
           status VARCHAR(20) NOT NULL DEFAULT 'not started',
           lights_out_setting BOOLEAN NOT NULL DEFAULT FALSE,
-          maze_Setting VARCHAR(10) NOT NULL DEFAULT 'Off',
+          maze_setting VARCHAR(10) NOT NULL DEFAULT 'Off',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );`;
 
