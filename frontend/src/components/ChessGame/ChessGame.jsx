@@ -20,6 +20,7 @@ import { gameOverMessage, findKing, SQUARES } from "@utils/ChessUtils";
 
 import "./ChessGame.css";
 import { useAbly } from "ably/react";
+import { api } from "../../utils/api";
 
 export function ChessGame() {
     const {
@@ -78,7 +79,7 @@ export function ChessGame() {
             }
             if (matchingMove === null) {
                 console.log("Invalid move", move);
-                return;
+                return false;
             }
 
             if (move.promotion !== undefined) {
@@ -94,16 +95,17 @@ export function ChessGame() {
             } catch (e) {
                 console.log("Invalid move", move);
                 console.error(e);
-                return;
+                return false;
             }
         }
         let newMoves = moves;
         let moveString = move.from + move.to;
         moveString += move.promotion ? move.promotion : "";
-        console.log("Your move made:", moveString);
+        console.log("Move made:", moveString);
         newMoves.push(moveString);
         setMoves(newMoves);
         setGame(gameCopy);
+        return true;
     }
 
     function onDrop(sourceSquare, targetSquare, piece) {
@@ -119,7 +121,10 @@ export function ChessGame() {
             move.promotion = piece[1].toLowerCase();
         }
 
-        makeAMove(move);
+        let moveWasValid = makeAMove(move);
+        if(!singlePlayer && moveWasValid){
+            api("/game/move", "POST", { gameId: gameId, move: move });
+        }
     }
 
     //Dev testing functions (remove when done)
@@ -318,10 +323,11 @@ export function ChessGame() {
                         setGame(gameRep);
 
                     }else{
+                       
                         let move = {
-                            from: data.subString(0, 2),
-                            to: data.subString(2, 4),
-                        };
+                            from: data.slice(0,2),
+                            to: data.slice(2,4),
+                        }
     
                         // Check if the move is a promotion
                         if (data.length > 4) {

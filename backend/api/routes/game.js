@@ -259,22 +259,23 @@ router.post("/move", async (req, res) => {
     let board = game.rows[0].board;
     let moves = JSON.parse(game.rows[0].moves);
     let mazeSetting = game.rows[0].maze_setting;
+    let mazeIsOn = mazeSetting !== "Off";
 
     let chessGame;
     if (mazeIsOn) {
         chessGame = new Chess(board);
     } else {
-        chessGame = new Chess().loadPgn(moves.join(" ")); // TODO: check if this works might need to add turn numbers
+        chessGame = new Chess();
+        chessGame.loadPgn(moves.join(" ")); // TODO: check if this works might need to add turn numbers
     }
 
     let turn = chessGame.turn();
 
-    if (color !== turn) {
+    if (color[0] !== turn) {
         return res.json({ message: "It's not your turn" });
     }
 
     let possMoves;
-    let mazeIsOn = mazeSetting !== "Off";
     let maze = JSON.parse(game.rows[0].maze);
 
     if (mazeIsOn) {
@@ -321,24 +322,24 @@ router.post("/move", async (req, res) => {
     }
 
     let gameIsOver = false;
-    let gameOverMessage = "";
+    let gameOverMsg = "";
     if (mazeIsOn) {
-        gameOverMessage = gameOverInMaze(
+        gameOverMsg = gameOverInMaze(
             chessGame,
             newMaze,
             moves,
             mazeSetting
         );
-        gameIsOver = gameOverMessage !== "";
+        gameIsOver = gameOverMsg !== "";
     } else {
         gameIsOver = chessGame.isGameOver();
-        gameOverMessage = gameOverMessage(chessGame);
+        gameOverMsg = gameOverMessage(chessGame);
     }
 
     let statusSetInQuery = gameIsOver ? ", status = 'finished'" : "";
     let updateQuery = mazeIsOn
-        ? `UPDATE games SET moves = $1, board = $2, maze = $3 ${statusSetInQuery} WHERE game_id = $3`
-        : `UPDATE games SET moves = $1, board = $2 ${statusSetInQuery} WHERE game_id = $4`;
+        ? `UPDATE games SET moves = $1, board = $2, maze = $3 ${statusSetInQuery} WHERE game_id = $4`
+        : `UPDATE games SET moves = $1, board = $2 ${statusSetInQuery} WHERE game_id = $3`;
 
     let updateParams = mazeIsOn
         ? [JSON.stringify(moves), newBoard, JSON.stringify(newMaze), gameId]
@@ -368,7 +369,7 @@ router.post("/move", async (req, res) => {
         publish(gameId, "white", whiteVisibleBoard);
     } else {
         // Publish the move to the game channel
-        publish(gameId, otherColor, move);
+        publish(gameId, otherColor, moveString);
     }
 
     // Publish the new maze if it was shifted
@@ -378,8 +379,8 @@ router.post("/move", async (req, res) => {
 
     // // If the game is over, publish the game over message
     if (gameIsOver) {
-        publish(gameId, "black", gameOverMessage);
-        publish(gameId, "white", gameOverMessage);
+        publish(gameId, "black", gameOverMsg);
+        publish(gameId, "white", gameOverMsg);
     }
 
     res.json({ message: "Move sent" });
