@@ -38,5 +38,5 @@ async function setupDatabase() {
 }
 
 if (process.env.NODE_ENV === "production") {
-    setupDatabase();
+    await setupDatabase();
 }

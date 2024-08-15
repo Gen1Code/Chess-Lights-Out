@@ -95,16 +95,16 @@ router.post("/play", async (req, res) => {
         let maze = mazeIsOn ? getRandomMaze() : null;
 
         // Add the player to the game and start the game in the database
-        addPlayerAndStartGame(gameId, req.userId, myColor, maze);
+        await addPlayerAndStartGame(gameId, req.userId, myColor, maze);
 
         //Publish to GID channel
         console.log("Publishing to GID channel", msg.color, "Game is starting");
-        publish(gameId, msg.color, "Game is starting");
+        await publish(gameId, msg.color, "Game is starting");
 
         // Publish the maze if it is on
         if (mazeIsOn) {
             console.log("Publishing maze to GID channel", maze);
-            publish(gameId, "maze", maze);
+            await publish(gameId, "maze", maze);
         }
 
         res.json({ message: "Game Found", gameId: gameId, color: myColor });
@@ -117,10 +117,10 @@ router.post("/play", async (req, res) => {
 
         // Publish the message to the queue
         console.log("Publishing to queue", queueName);
-        publish(queueName, "gameCreation", JSON.stringify(msg));
+        await publish(queueName, "gameCreation", JSON.stringify(msg));
 
         // Create a new game in the database
-        createGame(gameId, req.userId, color, settings);
+        await createGame(gameId, req.userId, color, settings);
 
         // Return the game id and color to the user
         res.json({
@@ -195,7 +195,7 @@ router.post("/resign", async (req, res) => {
 
     console.log("Publishing to GID channel", otherColor, "Opponent resigned");
     // Publish to the game channel that the game is finished
-    publish(gameId, otherColor, "Opponent resigned");
+    await publish(gameId, otherColor, "Opponent resigned");
 
     res.json({ message: "Resigned" });
 });
@@ -317,19 +317,19 @@ router.post("/move", async (req, res) => {
 
     console.log("Publishing to GID channel", otherColor, moveString);
     // Publish the move to the game channel
-    publish(gameId, otherColor, moveString);
+    await publish(gameId, otherColor, moveString);
 
     // Publish the new maze if it was shifted
     if (mazeSetting === "Shift") {
         console.log("Publishing maze to GID channel", newMaze);
-        publish(gameId, "maze", newMaze);
+        await publish(gameId, "maze", newMaze);
     }
 
     // // If the game is over, publish the game over message
     if (gameIsOver) {
         console.log("Publishing game Over to GID channel", gameOverMsg);
-        publish(gameId, "black", gameOverMsg);
-        publish(gameId, "white", gameOverMsg);
+        await publish(gameId, "black", gameOverMsg);
+        await publish(gameId, "white", gameOverMsg);
     }
 
     res.json({ message: "Move sent" });
