@@ -279,7 +279,7 @@ router.post("/move", async (req, res) => {
     let maze = JSON.parse(game.rows[0].maze);
 
     if (mazeIsOn) {
-        possMoves = possibleMoves(game, maze);
+        possMoves = possibleMoves(chessGame, maze);
     } else {
         possMoves = chessGame.moves({ verbose: true });
     }

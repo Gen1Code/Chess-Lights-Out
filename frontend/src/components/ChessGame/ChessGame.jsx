@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import { GameContext } from "@context/GameContext";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
@@ -49,6 +49,11 @@ export function ChessGame() {
 
     const [squareStyles, setSquareStyles] = useState({});
     const [checkStyle, setCheckStyle] = useState({});
+
+    const gameRef = useRef(game);
+    const currentGameSettingsRef = useRef(currentGameSettings);
+    const mazeRef = useRef(maze);
+    const movesRef = useRef(moves);
 
     const turn = game.turn() === "w" ? "white" : "black";
     const inCheck = mazeIsOn
@@ -122,7 +127,7 @@ export function ChessGame() {
         }
 
         let moveWasValid = makeAMove(move);
-        if(!singlePlayer && moveWasValid){
+        if (!singlePlayer && moveWasValid) {
             api("/game/move", "POST", { gameId: gameId, move: move });
         }
     }
@@ -170,7 +175,6 @@ export function ChessGame() {
         }
         const move = getBotMove(gameCopy, mazeCopy);
         if (!move) return;
-
 
         if (mazeIsOn) {
             makeMoveInMaze(gameCopy, move);
@@ -229,9 +233,16 @@ export function ChessGame() {
         }
     }, [turn]);
 
+    useEffect(() => {
+        movesRef.current = moves;
+    }, [moves]);
+
     // If something occurs that changes the board, style the squares
     useEffect(() => {
         styleSquares(game, maze, orientation);
+        gameRef.current = game;
+        currentGameSettingsRef.current = currentGameSettings;
+        mazeRef.current = maze;
     }, [maze, game, currentGameSettings]);
 
     // if king is in check, style the square
@@ -276,10 +287,13 @@ export function ChessGame() {
             console.log("Game started");
 
             const newGame = new Chess();
-            const newMaze = getRandomMaze();
+            
+            if(singlePlayer){
+                const newMaze = getRandomMaze();
+                setMaze(newMaze);
+            }
 
             setGame(newGame);
-            setMaze(newMaze);
             setMoves([]);
 
             // if it's the computer's turn first, trigger a mov
@@ -311,30 +325,100 @@ export function ChessGame() {
                         ...prev,
                         status: "Opponent resigned!",
                     }));
+                } else if ( //This is alreeady detected in the frontend (necessary?) TODO
+                    data === "Black is in Checkmate" ||
+                    data === "White is in Checkmate" ||
+                    data === "Stalemate" ||
+                    data === "Insufficient Material" ||
+                    data === "Threefold Repetition" ||
+                    data === "50 Move Rule"
+                ) {
+                    // setCurrentGameSettings((prev) => ({
+                    //     ...prev,
+                    //     status: data,
+                    // }));
                 } else {
-                    if(currentGameSettings.lightsOut){
+                    if (currentGameSettings.lightsOut) {
                         let visibleBoard = data;
                         let gameRep = new Chess();
                         gameRep.clear();
                         visibleBoard.forEach((square) => {
-                            gameRep.put({ type: square.piece, color: square.color }, square.square);
+                            gameRep.put(
+                                { type: square.piece, color: square.color },
+                                square.square
+                            );
                         });
-                        
-                        setGame(gameRep);
 
-                    }else{
-                       
+                        setGame(gameRep);
+                    } else {
                         let move = {
-                            from: data.slice(0,2),
-                            to: data.slice(2,4),
-                        }
-    
+                            from: data.slice(0, 2),
+                            to: data.slice(2, 4),
+                        };
+
                         // Check if the move is a promotion
                         if (data.length > 4) {
                             move.promotion = data[4];
                         }
-    
-                        makeAMove(move);
+
+                        console.log(
+                            "Game History in callback with Ref:",
+                            gameRef.current.pgn()
+                        );
+                        console.log(
+                            "Game Status in callback with Ref:",
+                            currentGameSettingsRef.current.status
+                        );
+                        console.log(
+                            "Game Maze in callback with Ref:",
+                            mazeRef.current
+                        );
+
+                        const gameCopy = new Chess();
+
+                        if (currentGameSettingsRef.current.maze !== "Off") {
+                            gameCopy.load(gameRef.current.fen());
+
+                            let possMoves = possibleMoves(
+                                gameCopy,
+                                mazeRef.current
+                            );
+                            let matchingMove = null;
+                            for (let i = 0; i < possMoves.length; i++) {
+                                if (
+                                    possMoves[i].from === move.from &&
+                                    possMoves[i].to === move.to
+                                ) {
+                                    matchingMove = possMoves[i];
+                                    break;
+                                }
+                            }
+                            if (matchingMove === null) {
+                                console.log("Invalid move", move);
+                            }
+
+                            if (move.promotion !== undefined) {
+                                matchingMove.promotion = move.promotion;
+                            }
+
+                            makeMoveInMaze(gameCopy, matchingMove);
+                        } else {
+                            gameCopy.loadPgn(gameRef.current.pgn());
+
+                            try {
+                                gameCopy.move(move);
+                            } catch (e) {
+                                console.log("Invalid move", move);
+                                console.error(e);
+                            }
+                        }
+                        let newMoves = movesRef.current;
+                        let moveString = move.from + move.to;
+                        moveString += move.promotion ? move.promotion : "";
+                        console.log("Move made:", moveString);
+                        newMoves.push(moveString);
+                        setMoves(newMoves);
+                        setGame(gameCopy);
                     }
                 }
 
