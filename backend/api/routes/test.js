@@ -1,6 +1,5 @@
 import express from 'express';
-import db from '../lib/database.js';
-
+import { sql } from '@vercel/postgres';
 const router = express.Router();
 
 router.get('/server', (req, res) => {
@@ -8,7 +7,7 @@ router.get('/server', (req, res) => {
 });
   
 router.get('/db', async (req, res) => {
-    const result = await db.query("SELECT name FROM users LIMIT 5");
+    const result = await sql`SELECT name FROM users LIMIT 5`;
     res.json(result.rows);
 });
 

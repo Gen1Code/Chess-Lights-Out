@@ -1,16 +1,13 @@
 import express from "express";
-import db from "../lib/database.js";
 import { getAuthTokenRequest } from "../lib/pubsub.js";
 import { v4 as uuidv4 } from "uuid";
+import { sql } from "@vercel/postgres";
 
 const router = express.Router();
 
 async function createUser(userId, name) {
     try {
-        await db.query(`INSERT INTO users (user_id, name) VALUES ($1, $2)`, [
-            userId,
-            name,
-        ]);
+        await sql`INSERT INTO users (user_id, name) VALUES (${userId}, ${name})`;
         return true;
     } catch (err) {
         console.error("Failed to create user");

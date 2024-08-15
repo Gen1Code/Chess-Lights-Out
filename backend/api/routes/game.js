@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
-import db from "../lib/database.js";
+import { sql } from "@vercel/postgres";
 import { publish, getMessageFromQueue } from "../lib/pubsub.js";
 import {
     possibleMoves,
@@ -9,7 +9,7 @@ import {
     getRandomMaze,
     gameOverInMaze,
     makeMoveInMaze,
-    gameOverMessage
+    gameOverMessage,
 } from "../lib/chessUtils.js";
 import { Chess } from "chess.js";
 
@@ -20,15 +20,14 @@ let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 
 async function createGame(gameId, userId, color, settings) {
     try {
-        const insertQuery = `INSERT INTO games (game_id, ${color}_player, lights_out_setting, maze_setting) VALUES ($1, $2, $3, $4)`;
-        const insertParams = [
-            gameId,
-            userId,
-            settings.lightsOut,
-            settings.maze,
-        ];
-        await db.query(insertQuery, insertParams);
-
+        const column = color + "_player";
+        await sql.query(
+            `
+            INSERT INTO games (game_id, ${column}, lights_out_setting, maze_setting)
+            VALUES ($1, $2, $3, $4)
+          `,
+            [gameId, userId, settings.lightsOut, settings.maze]
+        );
         return true;
     } catch (err) {
         console.error("Failed to create game:", err);
@@ -42,31 +41,29 @@ async function addPlayerAndStartGame(gameId, userId, color, maze) {
         // Change status to ongoing
         // Add Maze if it exists
 
-        const updateQuery =
-            maze !== null
-                ? `UPDATE games SET ${color}_player = $1, maze = $2, status = 'ongoing' WHERE game_id = $3`
-                : `UPDATE games SET ${color}_player = $1, status = 'ongoing' WHERE game_id = $2`;
-
-        const queryParams =
-            maze !== null
-                ? [userId, JSON.stringify(maze), gameId]
-                : [userId, gameId];
-
-        await db.query(updateQuery, queryParams);
+        if (maze === null) {
+            await sql.query(
+                `UPDATE games SET ${color}_player = $1, status = 'ongoing' WHERE game_id = $2`,
+                [userId, gameId]
+            );
+        } else {
+            await sql.query(
+                `UPDATE games SET ${color}_player = $1, maze = $2, status = 'ongoing' WHERE game_id = $3`,
+                [userId, JSON.stringify(maze), gameId]
+            );
+        }
 
         return true;
     } catch (err) {
-        console.error("Failed to add player to game and/or start the game");
+        console.error("Failed to add player to game and/or start the game", err);
     }
     return false;
 }
 
 router.post("/play", async (req, res) => {
     // Check if the user is already in an ongoing game
-    let game = await db.query(
-        `SELECT game_id FROM games WHERE (white_player = $1 OR black_player = $1) AND status != $2`,
-        [req.userId, "finished"]
-    );
+    let game =
+        await sql`SELECT game_id FROM games WHERE (white_player = ${req.userId} OR black_player = ${req.userId}) AND status != 'finished'`;
 
     if (game.rows.length > 0) {
         return res.json({
@@ -133,9 +130,7 @@ router.post("/play", async (req, res) => {
 
 router.post("/get", async (req, res) => {
     let gameId = req.body.gameId;
-    let game = await db.query(`SELECT * FROM games WHERE game_id = $1`, [
-        gameId,
-    ]);
+    let game = await sql`SELECT * FROM games WHERE game_id = ${gameId}`;
 
     if (game.rows.length === 0) {
         return res.json({ message: "Game not found" });
@@ -174,10 +169,8 @@ router.post("/get", async (req, res) => {
 
 router.post("/resign", async (req, res) => {
     let gameId = req.body.gameId;
-    let game = await db.query(
-        `SELECT white_player, black_player FROM games WHERE game_id = $1`,
-        [gameId]
-    );
+    let game =
+        await sql`SELECT white_player, black_player FROM games WHERE game_id = ${gameId}`;
 
     if (game.rows.length === 0) {
         return res.json({ message: "Game not found" });
@@ -195,9 +188,7 @@ router.post("/resign", async (req, res) => {
     let otherColor = color === "white" ? "black" : "white";
 
     // Update the game status to finished
-    await db.query(`UPDATE games SET status = 'finished' WHERE game_id = $1`, [
-        gameId,
-    ]);
+    await sql`UPDATE games SET status = 'finished' WHERE game_id = ${gameId}`;
 
     // Publish to the game channel that the game is finished
     publish(gameId, otherColor, "Opponent resigned");
@@ -210,9 +201,7 @@ router.post("/move", async (req, res) => {
     let gameId = req.body.gameId;
     let move = req.body.move;
 
-    let game = await db.query(`SELECT * FROM games WHERE game_id = $1`, [
-        gameId,
-    ]);
+    let game = await sql`SELECT * FROM games WHERE game_id = ${gameId}`;
 
     if (game.rows.length === 0) {
         return res.json({ message: "Game not found" });
@@ -300,12 +289,7 @@ router.post("/move", async (req, res) => {
     let gameIsOver = false;
     let gameOverMsg = "";
     if (mazeIsOn) {
-        gameOverMsg = gameOverInMaze(
-            chessGame,
-            newMaze,
-            moves,
-            mazeSetting
-        );
+        gameOverMsg = gameOverInMaze(chessGame, newMaze, moves, mazeSetting);
         gameIsOver = gameOverMsg !== "";
     } else {
         gameIsOver = chessGame.isGameOver();
@@ -313,18 +297,17 @@ router.post("/move", async (req, res) => {
     }
 
     let statusSetInQuery = gameIsOver ? ", status = 'finished'" : "";
-    let updateQuery = mazeIsOn
-        ? `UPDATE games SET moves = $1, board = $2, maze = $3 ${statusSetInQuery} WHERE game_id = $4`
-        : `UPDATE games SET moves = $1, board = $2 ${statusSetInQuery} WHERE game_id = $3`;
-
-    let updateParams = mazeIsOn
-        ? [JSON.stringify(moves), newBoard, JSON.stringify(newMaze), gameId]
-        : [JSON.stringify(moves), newBoard, gameId];
 
     // Update the database
-    await db.query(updateQuery, updateParams);
+    if (mazeIsOn) {
+        await sql.query(
+            `UPDATE games SET moves = $1, maze = $2, board = $3 ${statusSetInQuery} WHERE game_id = $4`,
+            [JSON.stringify(moves), JSON.stringify(newMaze), newBoard, gameId]
+        );
+    } else {
+        await sql.query(`UPDATE games SET moves = $1, board = $2 ${statusSetInQuery} WHERE game_id = $3`, [JSON.stringify(moves), newBoard, gameId]);
+    }
 
-    
     // Publish the move to the game channel
     publish(gameId, otherColor, moveString);
 
