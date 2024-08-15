@@ -5,7 +5,7 @@ import amqp from "amqplib/callback_api.js";
 dotenv.config();
 
 export async function publish(channelName, event, message) {
-    const client = new Ably.Realtime(process.env.ABLY_API_KEY);
+    const client = new Ably.Rest(process.env.ABLY_API_KEY);
     const channel = client.channels.get(channelName);
     await channel.publish(event, message);
     client.close();
