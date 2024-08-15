@@ -98,10 +98,12 @@ router.post("/play", async (req, res) => {
         addPlayerAndStartGame(gameId, req.userId, myColor, maze);
 
         //Publish to GID channel
+        console.log("Publishing to GID channel", msg.color, "Game is starting");
         publish(gameId, msg.color, "Game is starting");
 
         // Publish the maze if it is on
         if (mazeIsOn) {
+            console.log("Publishing maze to GID channel", maze);
             publish(gameId, "maze", maze);
         }
 
@@ -114,6 +116,7 @@ router.post("/play", async (req, res) => {
         let msg = { gameId: gameId, color: color, settings: settings };
 
         // Publish the message to the queue
+        console.log("Publishing to queue", queueName);
         publish(queueName, "gameCreation", JSON.stringify(msg));
 
         // Create a new game in the database
@@ -190,6 +193,7 @@ router.post("/resign", async (req, res) => {
     // Update the game status to finished
     await sql`UPDATE games SET status = 'finished' WHERE game_id = ${gameId}`;
 
+    console.log("Publishing to GID channel", otherColor, "Opponent resigned");
     // Publish to the game channel that the game is finished
     publish(gameId, otherColor, "Opponent resigned");
 
@@ -308,16 +312,19 @@ router.post("/move", async (req, res) => {
         await sql.query(`UPDATE games SET moves = $1, board = $2 ${statusSetInQuery} WHERE game_id = $3`, [JSON.stringify(moves), newBoard, gameId]);
     }
 
+    console.log("Publishing to GID channel", otherColor, moveString);
     // Publish the move to the game channel
     publish(gameId, otherColor, moveString);
 
     // Publish the new maze if it was shifted
     if (mazeSetting === "Shift") {
+        console.log("Publishing maze to GID channel", newMaze);
         publish(gameId, "maze", newMaze);
     }
 
     // // If the game is over, publish the game over message
     if (gameIsOver) {
+        console.log("Publishing game Over to GID channel", gameOverMsg);
         publish(gameId, "black", gameOverMsg);
         publish(gameId, "white", gameOverMsg);
     }
