@@ -6,9 +6,9 @@ dotenv.config();
 
 const ablyRest = new Ably.Rest(process.env.ABLY_API_KEY);
 
-export async function publish(channelName, event, message) {
+export function publish(channelName, event, message) {
     const channel = ablyRest.channels.get(channelName);
-    await channel.publish(event, message);
+    channel.publish(event, message);
 }
 
 export async function getAuthTokenRequest(userId) {

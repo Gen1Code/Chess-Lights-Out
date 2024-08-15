@@ -25,7 +25,7 @@ async function createGame(gameId, userId, color, settings) {
         }else{
             await sql`INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze})`;
         }
-
+        console.log("Game created, gameId:", gameId);
         return true;
     } catch (err) {
         console.error("Failed to create game:", err);
@@ -52,7 +52,7 @@ async function addPlayerAndStartGame(gameId, userId, color, maze) {
                 await sql`UPDATE games SET black_player = ${userId}, maze = ${JSON.stringify(maze)}, status = 'ongoing' WHERE game_id = ${gameId}`;
             }
         }
-
+        
         return true;
     } catch (err) {
         console.error("Failed to add player to game and/or start the game", err);
@@ -299,8 +299,6 @@ router.post("/move", async (req, res) => {
         gameIsOver = chessGame.isGameOver();
         gameOverMsg = gameOverMessage(chessGame);
     }
-
-    let statusSetInQuery = gameIsOver ? ", status = 'finished'" : "";
 
     // Update the database
     if (mazeIsOn) {
