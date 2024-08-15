@@ -9,7 +9,6 @@ import {
     getRandomMaze,
     gameOverInMaze,
     makeMoveInMaze,
-    getLitupSquares,
     gameOverMessage
 } from "../lib/chessUtils.js";
 import { Chess } from "chess.js";
@@ -160,38 +159,15 @@ router.post("/get", async (req, res) => {
         maze_setting: gameMazeSetting,
     } = game.rows[0];
 
-    // If the game is lights out, return the viewable board
-    if (gameLightsOutSetting) {
-        let mazeObj = JSON.parse(gameMaze);
-
-        let visibleSquares = getLitupSquares(new Chess(gameBoard), mazeObj, color);
-        let visibleBoard = [];
-        let board = new Chess(gameBoard).board();
-        visibleSquares.forEach((square) => {
-            visibleBoard.push(board[square]);
-        });
-
-        return res.json({
-            message: "Game",
-            color: color,
-            gameId: gameId,
-            status: gameStatus,
-            board: visibleBoard,
-            lightsOutSetting: gameLightsOutSetting,
-            maze: gameMaze,
-            mazeSetting: gameMazeSetting,
-        });
-    }
-
     res.json({
         message: "Game",
         color: color,
         gameId: gameId,
         status: gameStatus,
-        moves: moves,
+        moves: JSON.parse(moves),
         board: gameBoard,
         lightsOutSetting: gameLightsOutSetting,
-        maze: gameMaze,
+        maze: JSON.parse(gameMaze),
         mazeSetting: gameMazeSetting,
     });
 });
@@ -348,29 +324,9 @@ router.post("/move", async (req, res) => {
     // Update the database
     await db.query(updateQuery, updateParams);
 
-    let lightsOutSetting = game.rows[0].lights_out_setting;
-    if (lightsOutSetting) {
-        let blackLitupSquares = getLitupSquares(chessGame, newMaze, "black");
-        let whiteLitupSquares = getLitupSquares(chessGame, newMaze, "white");
-        let board = chessGame.board();
-
-        let blackVisibleBoard = [];
-        let whiteVisibleBoard = [];
-
-        blackLitupSquares.forEach((square) => {
-            blackVisibleBoard.push(board[square]);
-        });
-
-        whiteLitupSquares.forEach((square) => {
-            whiteVisibleBoard.push(board[square]);
-        });
-
-        publish(gameId, "black", blackVisibleBoard);
-        publish(gameId, "white", whiteVisibleBoard);
-    } else {
-        // Publish the move to the game channel
-        publish(gameId, otherColor, moveString);
-    }
+    
+    // Publish the move to the game channel
+    publish(gameId, otherColor, moveString);
 
     // Publish the new maze if it was shifted
     if (mazeSetting === "Shift") {

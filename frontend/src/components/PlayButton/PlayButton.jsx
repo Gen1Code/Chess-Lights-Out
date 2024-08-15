@@ -11,7 +11,7 @@ export function PlayButton() {
         setGameId,
         setGame,
         setMaze,
-        setMoves
+        setMoves,
     } = useContext(GameContext);
     const [response, setResponse] = useState(null);
 
@@ -75,25 +75,28 @@ export function PlayButton() {
                     setResponse
                 );
             } else if (message === "Game") {
+                let gameStatus = response.status;
+                if (gameStatus === "ongoing") {
+                    gameStatus = "Playing";
+                } else if (gameStatus === "finished") {
+                    gameStatus = "Game Over";
+                } else {
+                    gameStatus = "Looking For a Game";
+                }
                 setCurrentGameSettings({
                     mode: "Multi",
                     gameId: response.gameId,
                     color: response.color,
-                    status: response.status,
+                    status: gameStatus,
                     maze: response.mazeSetting,
                     lightsOut: response.lightsOutSetting,
                 });
 
-                let maze = JSON.parse(response.maze);
+                let maze = response.maze;
                 let board = response.board;
+                let moves = response.moves;
 
-                if (response.lightsOutSetting) {
-                    //TODO: DO stuff to make the board only show the lit up squares
-                } else {
-                    let moves = response.moves;
-                    setMoves(moves);
-                }
-
+                setMoves(moves);
                 setGame(new Chess(board));
                 setMaze(maze);
             }

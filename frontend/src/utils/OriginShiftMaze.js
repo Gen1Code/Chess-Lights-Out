@@ -477,13 +477,16 @@ function piecesMovements(game, maze) {
 }
 
 //Optimised for speed
-export function possibleMoves(game, maze) {
-    //No Moves if game is over
+export function possibleMoves(game, maze, noMovesIfGameOver = true) {
     let fen = game.fen().split(" ");
     fen[1] = game.turn() === "w" ? "b" : "w";
     let oppTurnGame = new Chess(fen.join(" "));
-    if (inCheckInMaze(oppTurnGame, maze)) {
-        return [];
+
+    //No Moves if game is over
+    if (noMovesIfGameOver) {
+        if (inCheckInMaze(oppTurnGame, maze)) {
+            return [];
+        }
     }
 
     let moves = piecesMovements(game, maze);
@@ -504,7 +507,6 @@ export function possibleMoves(game, maze) {
             gameCopy.put({ type: moves[i].piece, color: turn }, moves[i].to);
         }
         //check if in check
-        // console.log("Checking for check in maze", moves[i]);
         if (inCheckInMaze(gameCopy, maze)) {
             // console.log("Filtered out move", moves[i]);
         } else {
@@ -563,7 +565,7 @@ export function attackingKingInMaze(game, maze) {
     return attackers;
 }
 
-export function attackingKing(game){
+export function attackingKing(game) {
     let attackers = [];
 
     let turn = game.turn();
@@ -572,7 +574,7 @@ export function attackingKing(game){
     let fen = game.fen().split(" ");
     fen[1] = turn === "w" ? "b" : "w";
     let oppTurnGame = new Chess(fen.join(" "));
-    
+
     let moves = oppTurnGame.moves({ verbose: true });
     for (let i = 0; i < moves.length; i++) {
         if (moves[i].to === kingSquare) {
@@ -604,9 +606,9 @@ export function makeMoveInMaze(game, move) {
         }
     } else if (move.piece === "k") {
         if (move.to[1] <= 7) {
-            fen[2] = fen[2].replace("kq", "");
+            fen[2] = fen[2].replace(/[kq]/g, "");
         } else {
-            fen[2] = fen[2].replace("KQ", "");
+            fen[2] = fen[2].replace(/[KQ]/g, "");
         }
     }
 
@@ -663,7 +665,6 @@ export function makeMoveInMaze(game, move) {
             game.put({ type: "r", color: move.color }, "d8");
         }
     }
-
 }
 
 export function styleForMaze(styles, borders, orientation) {
@@ -722,7 +723,9 @@ export function gameOverMessageInMaze(game, maze, moves, mazeSetting) {
     let possMoves = possibleMoves(game, maze);
     if (possMoves.length === 0) {
         if (inCheckInMaze(game, maze)) {
-            return (game.turn() === "w" ? "White" : "Black") + " is in Checkmate";
+            return (
+                (game.turn() === "w" ? "White" : "Black") + " is in Checkmate"
+            );
         }
         return "Stalemate";
     }

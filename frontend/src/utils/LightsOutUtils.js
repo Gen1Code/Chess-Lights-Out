@@ -30,7 +30,7 @@ export function getLitupSquares(game, maze, orientation) {
 
     let moves;
     if (maze !== null) {
-        moves = possibleMoves(game, maze);
+        moves = possibleMoves(game, maze, false);
     } else {
         moves = game.moves({ verbose: true });
     }
