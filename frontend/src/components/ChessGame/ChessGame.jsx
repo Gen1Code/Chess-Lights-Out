@@ -347,6 +347,7 @@ export function ChessGame() {
                         status: data,
                     }));
                 } else {
+                    console.log("Move received:", data);
                     let move = {
                         from: data.slice(0, 2),
                         to: data.slice(2, 4),
@@ -357,19 +358,6 @@ export function ChessGame() {
                         move.promotion = data[4];
                     }
 
-                    console.log(
-                        "Game History in callback with Ref:",
-                        gameRef.current.pgn()
-                    );
-                    console.log(
-                        "Game Status in callback with Ref:",
-                        currentGameSettingsRef.current.status
-                    );
-                    console.log(
-                        "Game Maze in callback with Ref:",
-                        mazeRef.current
-                    );
-
                     const gameCopy = new Chess();
 
                     if (currentGameSettingsRef.current.maze !== "Off") {
@@ -379,6 +367,7 @@ export function ChessGame() {
                             gameCopy,
                             mazeRef.current
                         );
+
                         let matchingMove = null;
                         for (let i = 0; i < possMoves.length; i++) {
                             if (
@@ -411,18 +400,22 @@ export function ChessGame() {
                     let newMoves = movesRef.current;
                     let moveString = move.from + move.to;
                     moveString += move.promotion ? move.promotion : "";
-                    console.log("Move made:", moveString);
+                    // console.log("Move made:", moveString);
                     newMoves.push(moveString);
                     setMoves(newMoves);
+                    console.log("ably set game")
                     setGame(gameCopy);
                 }
 
-                console.log("Message received:", data);
+                // console.log("Message received:", data);
             });
-            ably.channels.get(gameId).subscribe("maze", (msg) => {
+            const mazeChannel = ably.channels.get(gameId);
+            // User might miss the first maze message so rewind and grab it
+            mazeChannel.setOptions({ params: { rewind: "1" } });
+            mazeChannel.subscribe("maze", (msg) => {
                 let data = msg.data;
                 setMaze(data);
-                console.log("Message received:", data);
+                // console.log("Message received:", data);
             });
 
             return () => {
@@ -441,6 +434,7 @@ export function ChessGame() {
         <div className="chessboard">
             <Chessboard
                 className="board"
+                // key={game.fen()} // This is a hack to force the board to update since Strict Mode + Context loading gives the library trouble
                 position={game.fen()}
                 onPieceDrop={onDrop}
                 boardOrientation={orientation}

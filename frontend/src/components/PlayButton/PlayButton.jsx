@@ -1,19 +1,14 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useContext } from "react";
 import { GameContext } from "@context/GameContext";
 import { apiSetsReponse } from "@utils/api";
-import { Chess } from "chess.js";
 
 export function PlayButton() {
     const {
         settings,
         currentGameSettings,
         setCurrentGameSettings,
-        setGameId,
-        setGame,
-        setMaze,
-        setMoves,
+        setResponse,
     } = useContext(GameContext);
-    const [response, setResponse] = useState(null);
 
     const playing = currentGameSettings.status === "Playing";
     const looking = currentGameSettings.status === "Looking For a Game";
@@ -43,71 +38,6 @@ export function PlayButton() {
             apiSetsReponse("/game/resign", "POST", postData, setResponse);
         }
     }
-
-    useEffect(() => {
-        console.log(response);
-        if (response) {
-            let message = response.message;
-            if (message === "Game Found") {
-                setCurrentGameSettings({
-                    ...settings,
-                    gameId: response.gameId,
-                    color: response.color,
-                    status: "Starting",
-                });
-            } else if (message === "Resigned") {
-                setCurrentGameSettings((prev) => ({
-                    ...prev,
-                    status: "You resigned!",
-                }));
-            } else if (message === "Looking For a Game") {
-                setCurrentGameSettings({
-                    ...settings,
-                    gameId: response.gameId,
-                    color: response.color,
-                    status: "Looking For a Game",
-                });
-            } else if (message === "You are already in a game") {
-                apiSetsReponse(
-                    "/game/get",
-                    "POST",
-                    { gameId: response.gameId },
-                    setResponse
-                );
-            } else if (message === "Game") {
-                let gameStatus = response.status;
-                if (gameStatus === "ongoing") {
-                    gameStatus = "Playing";
-                } else if (gameStatus === "finished") {
-                    gameStatus = "Game Over";
-                } else {
-                    gameStatus = "Looking For a Game";
-                }
-                setCurrentGameSettings({
-                    mode: "Multi",
-                    gameId: response.gameId,
-                    color: response.color,
-                    status: gameStatus,
-                    maze: response.mazeSetting,
-                    lightsOut: response.lightsOutSetting,
-                });
-
-                let maze = response.maze;
-                let board = response.board;
-                let moves = response.moves;
-
-                setMoves(moves);
-                setGame(new Chess(board));
-                setMaze(maze);
-            }
-
-            if (response.gameId) {
-                localStorage.setItem("game_id", response.gameId);
-                setGameId(response.gameId);
-            }
-        }
-    }, [response]);
-
     return (
         <>
             {!playing && !looking && <button onClick={playGame}>Play</button>}

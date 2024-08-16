@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useState } from "react";
-import { api } from "../utils/api";
+import { api, apiSetsReponse } from "../utils/api";
 import { Chess } from "chess.js";
 import { getRandomMaze } from "@utils/OriginShiftMaze";
 
@@ -28,6 +28,8 @@ export const GameProvider = ({ children }) => {
     const [maze, setMaze] = useState(() => getRandomMaze());
     const [moves, setMoves] = useState([]);
 
+    const [response, setResponse] = useState(null);
+
     useEffect(() => {
         async function localId() {
             if (!userId) {
@@ -38,8 +40,90 @@ export const GameProvider = ({ children }) => {
                 }
             }
         }
+
+        function getLastGame() {
+            if (gameId && gameId !== "") {
+                console.log("Getting last game");
+                apiSetsReponse(
+                    "/game/get",
+                    "POST",
+                    { gameId: gameId },
+                    setResponse
+                );
+            }
+        }
+
         localId();
+        getLastGame();
     }, []);
+
+    useEffect(() => {
+        if (response !== null) {
+            console.log(response);
+            let message = response.message;
+            if (message === "Game Found") {
+                setCurrentGameSettings({
+                    ...settings,
+                    gameId: response.gameId,
+                    color: response.color,
+                    status: "Starting",
+                });
+            } else if (message === "Resigned") {
+                setCurrentGameSettings((prev) => ({
+                    ...prev,
+                    status: "You resigned!",
+                }));
+            } else if (message === "Looking For a Game") {
+                setCurrentGameSettings({
+                    ...settings,
+                    gameId: response.gameId,
+                    color: response.color,
+                    status: "Looking For a Game",
+                });
+            } else if (message === "You are already in a game") {
+                apiSetsReponse(
+                    "/game/get",
+                    "POST",
+                    { gameId: response.gameId },
+                    setResponse
+                );
+            } else if (message === "Game") {
+                let gameStatus = response.status;
+                if (gameStatus === "ongoing") {
+                    gameStatus = "Playing";
+                } else if (gameStatus === "finished") {
+                    gameStatus = "Game Over";
+                } else {
+                    gameStatus = "Looking For a Game";
+                }
+                setCurrentGameSettings({
+                    mode: "Multi",
+                    gameId: response.gameId,
+                    color: response.color,
+                    status: gameStatus,
+                    maze: response.mazeSetting,
+                    lightsOut: response.lightsOutSetting,
+                });
+
+                let maze = response.maze;
+                let board = response.board;
+                let moves = response.moves;
+                console.log("Game context set");
+                setMoves(moves);
+                setGame(new Chess(board));
+                setMaze(maze);
+            }
+
+            if (response.gameId) {
+                localStorage.setItem("game_id", response.gameId);
+                setGameId(response.gameId);
+            }
+        }
+    }, [response]);
+
+    useEffect(() => {
+        console.log(game.fen());
+    }, [game]);
 
     return (
         <GameContext.Provider
@@ -60,6 +144,7 @@ export const GameProvider = ({ children }) => {
                 setMaze,
                 moves,
                 setMoves,
+                setResponse,
             }}
         >
             {children}
