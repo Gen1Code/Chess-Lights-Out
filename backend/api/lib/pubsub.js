@@ -52,14 +52,15 @@ export function consumeQueue(queueName) {
                     (msg) => {
                         if (msg !== null) {
                             clearTimeout(timer);
-                            const messageContent = JSON.parse(msg.content.toString());
+                            const messageContent = JSON.parse(
+                                msg.content.toString()
+                            );
                             channel.ack(msg);
                             channel.close(() => {
                                 connection.close();
                             });
                             resolve(messageContent);
                         }
-                            
                     },
                     {
                         noAck: false,
@@ -74,12 +75,12 @@ export async function getMessageFromQueue(queueName) {
     try {
         const message = await consumeQueue(queueName);
         if (message !== null) {
-            return message.messages[0]
+            return message.messages[0];
         } else {
-            console.log('No message received within the timeout period.');
-            return null
+            console.log("No message received within the timeout period.");
+            return null;
         }
     } catch (error) {
-        console.error('Error consuming queue:', error);
+        console.error("Error consuming queue:", error);
     }
 }

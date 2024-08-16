@@ -16,7 +16,7 @@ async function createUser(userId, name) {
 }
 
 router.get("/ably", async (req, res) => {
-    console.log("Getting auth token for user", req.userId);
+    // console.log("Getting auth token for user", req.userId);
     const tokenRequest = await getAuthTokenRequest(req.userId);
     // console.log(tokenRequest);
     res.json(tokenRequest);
@@ -25,7 +25,7 @@ router.get("/ably", async (req, res) => {
 router.get("/", async (req, res) => {
     if (req.cookies.user_id) {
         return res.json({ user_id: req.cookies.user_id });
-    }else if (req.headers.authorization) {
+    } else if (req.headers.authorization) {
         return res.json({ user_id: req.headers.authorization.split(" ")[1] });
     }
     res.json({ message: "No user_id Provided" });

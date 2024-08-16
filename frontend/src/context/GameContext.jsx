@@ -59,7 +59,7 @@ export const GameProvider = ({ children }) => {
 
     useEffect(() => {
         if (response !== null) {
-            console.log(response);
+            // console.log(response);
             let message = response.message;
             if (message === "Game Found") {
                 setCurrentGameSettings({
@@ -108,7 +108,7 @@ export const GameProvider = ({ children }) => {
                 let maze = response.maze;
                 let board = response.board;
                 let moves = response.moves;
-                console.log("Game context set");
+
                 setMoves(moves);
                 setGame(new Chess(board));
                 setMaze(maze);
@@ -120,10 +120,6 @@ export const GameProvider = ({ children }) => {
             }
         }
     }, [response]);
-
-    useEffect(() => {
-        console.log(game.fen());
-    }, [game]);
 
     return (
         <GameContext.Provider

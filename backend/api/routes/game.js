@@ -73,7 +73,7 @@ router.post("/play", async (req, res) => {
     }
 
     let settings = req.body;
-    console.log("settings", settings);
+    // console.log("settings", settings);
     let mazeIsOn = settings.maze !== "Off";
     let lightsOutIsOn = settings.lightsOut;
 
@@ -98,12 +98,12 @@ router.post("/play", async (req, res) => {
         await addPlayerAndStartGame(gameId, req.userId, myColor, maze);
 
         //Publish to GID channel
-        console.log("Publishing to GID channel", msg.color, "Game is starting");
+        // console.log("Publishing to GID channel", msg.color, "Game is starting");
         await publish(gameId, msg.color, "Game is starting");
 
         // Publish the maze if it is on
         if (mazeIsOn) {
-            console.log("Publishing maze to GID channel", maze);
+            // console.log("Publishing maze to GID channel", maze);
             await publish(gameId, "maze", maze);
         }
 
@@ -116,7 +116,7 @@ router.post("/play", async (req, res) => {
         let msg = { gameId: gameId, color: color, settings: settings };
 
         // Publish the message to the queue
-        console.log("Publishing to queue", queueName);
+        // console.log("Publishing to queue", queueName);
         await publish(queueName, "gameCreation", JSON.stringify(msg));
 
         // Create a new game in the database
@@ -193,7 +193,7 @@ router.post("/resign", async (req, res) => {
     // Update the game status to finished
     await sql`UPDATE games SET status = 'finished' WHERE game_id = ${gameId}`;
 
-    console.log("Publishing to GID channel", otherColor, "Opponent resigned");
+    // console.log("Publishing to GID channel", otherColor, "Opponent resigned");
     // Publish to the game channel that the game is finished
     await publish(gameId, otherColor, "Opponent resigned");
 
@@ -278,7 +278,7 @@ router.post("/move", async (req, res) => {
 
         makeMoveInMaze(chessGame, matchingMove);
 
-        console.log("After Move", chessGame.fen());
+        // console.log("After Move", chessGame.fen());
     } else {
         chessGame.move(move);
     }
@@ -315,19 +315,19 @@ router.post("/move", async (req, res) => {
         }
     }
 
-    console.log("Publishing to GID channel", otherColor, moveString);
+    // console.log("Publishing to GID channel", otherColor, moveString);
     // Publish the move to the game channel
     await publish(gameId, otherColor, moveString);
 
     // Publish the new maze if it was shifted
     if (mazeSetting === "Shift") {
-        console.log("Publishing maze to GID channel", newMaze);
+        // console.log("Publishing maze to GID channel", newMaze);
         await publish(gameId, "maze", newMaze);
     }
 
     // // If the game is over, publish the game over message
     if (gameIsOver) {
-        console.log("Publishing game Over to GID channel", gameOverMsg);
+        // console.log("Publishing game Over to GID channel", gameOverMsg);
         await publish(gameId, "black", gameOverMsg);
         await publish(gameId, "white", gameOverMsg);
     }

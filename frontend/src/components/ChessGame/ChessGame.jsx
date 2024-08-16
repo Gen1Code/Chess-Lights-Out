@@ -111,7 +111,7 @@ export function ChessGame() {
         let newMoves = moves;
         let moveString = move.from + move.to;
         moveString += move.promotion ? move.promotion : "";
-        console.log("Move made:", moveString);
+        // console.log("Move made:", moveString);
         newMoves.push(moveString);
         setMoves(newMoves);
         setGame(gameCopy);
@@ -137,7 +137,7 @@ export function ChessGame() {
         }
     }
 
-    //Dev testing functions (remove when done)
+    //Dev testing functions
     function forcegame() {
         let fen;
         // Checkmate Potential
@@ -301,7 +301,7 @@ export function ChessGame() {
                 // Generate a random maze
                 const newMaze = getRandomMaze();
                 setMaze(newMaze);
-                
+
                 // if it's the computer's turn first, trigger a move
                 if (orientation === "black") {
                     botMove(newGame, newMaze);
@@ -316,11 +316,11 @@ export function ChessGame() {
 
     useEffect(() => {
         if (ably && !singlePlayer) {
-            console.log(
-                "Subscribing to game channel with",
-                gameId,
-                orientation
-            );
+            // console.log(
+            //     "Subscribing to game channel with",
+            //     gameId,
+            //     orientation
+            // );
             ably.channels.get(gameId).subscribe(orientation, (msg) => {
                 let data = msg.data;
                 if (data === "Game is starting") {
@@ -347,7 +347,7 @@ export function ChessGame() {
                         status: data,
                     }));
                 } else {
-                    console.log("Move received:", data);
+                    // console.log("Move received:", data);
                     let move = {
                         from: data.slice(0, 2),
                         to: data.slice(2, 4),
@@ -403,7 +403,6 @@ export function ChessGame() {
                     // console.log("Move made:", moveString);
                     newMoves.push(moveString);
                     setMoves(newMoves);
-                    console.log("ably set game")
                     setGame(gameCopy);
                 }
 
@@ -419,11 +418,11 @@ export function ChessGame() {
             });
 
             return () => {
-                console.log(
-                    "Unsubscribing from previous channel",
-                    gameId,
-                    orientation
-                );
+                // console.log(
+                //     "Unsubscribing from previous channel",
+                //     gameId,
+                //     orientation
+                // );
                 ably.channels.get(gameId).unsubscribe(orientation);
                 ably.channels.get(gameId).unsubscribe("maze");
             };
@@ -434,7 +433,7 @@ export function ChessGame() {
         <div className="chessboard">
             <Chessboard
                 className="board"
-                // key={game.fen()} // This is a hack to force the board to update since Strict Mode + Context loading gives the library trouble
+                // key={game.fen()} // This is a hack to force the board to update since Strict Mode + Context loading gives the library trouble Issue #119
                 position={game.fen()}
                 onPieceDrop={onDrop}
                 boardOrientation={orientation}
