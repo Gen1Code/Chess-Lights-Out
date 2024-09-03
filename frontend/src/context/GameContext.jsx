@@ -80,6 +80,13 @@ export const GameProvider = ({ children }) => {
                     color: response.color,
                     status: "Looking For a Game",
                 });
+            } else if (message === "Game Cancelled") {
+                setCurrentGameSettings({
+                    ...settings,
+                    gameId: "",
+                    color: "",
+                    status: "Game Cancelled!",
+                });
             } else if (message === "You are already in a game") {
                 apiSetsReponse(
                     "/game/get",

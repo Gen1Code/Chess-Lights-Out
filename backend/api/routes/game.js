@@ -20,9 +20,9 @@ let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 
 async function createGame(gameId, userId, color, settings) {
     try {
-        if(color === "white") {
+        if (color === "white") {
             await sql`INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze})`;
-        }else{
+        } else {
             await sql`INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze})`;
         }
         console.log("Game created, gameId:", gameId);
@@ -40,22 +40,29 @@ async function addPlayerAndStartGame(gameId, userId, color, maze) {
         // Add Maze if it exists
 
         if (maze === null) {
-            if(color === "white") {
+            if (color === "white") {
                 await sql`UPDATE games SET white_player = ${userId}, status = 'ongoing' WHERE game_id = ${gameId}`;
-            }else{
+            } else {
                 await sql`UPDATE games SET black_player = ${userId}, status = 'ongoing' WHERE game_id = ${gameId}`;
             }
         } else {
-            if(color === "white") {
-                await sql`UPDATE games SET white_player = ${userId}, maze = ${JSON.stringify(maze)}, status = 'ongoing' WHERE game_id = ${gameId}`;
-            }else{
-                await sql`UPDATE games SET black_player = ${userId}, maze = ${JSON.stringify(maze)}, status = 'ongoing' WHERE game_id = ${gameId}`;
+            if (color === "white") {
+                await sql`UPDATE games SET white_player = ${userId}, maze = ${JSON.stringify(
+                    maze
+                )}, status = 'ongoing' WHERE game_id = ${gameId}`;
+            } else {
+                await sql`UPDATE games SET black_player = ${userId}, maze = ${JSON.stringify(
+                    maze
+                )}, status = 'ongoing' WHERE game_id = ${gameId}`;
             }
         }
-        
+
         return true;
     } catch (err) {
-        console.error("Failed to add player to game and/or start the game", err);
+        console.error(
+            "Failed to add player to game and/or start the game",
+            err
+        );
     }
     return false;
 }
@@ -129,6 +136,35 @@ router.post("/play", async (req, res) => {
             color: color,
         });
     }
+});
+
+router.get("/cancel", async (req, res) => {
+    // Check if the user is already in an ongoing game
+    let game =
+        await sql`SELECT game_id, maze_setting, lights_out_setting FROM games WHERE (white_player = ${req.userId} OR black_player = ${req.userId}) AND status = 'not started'`;
+
+    if (game.rows.length == 0) {
+        return res.json({
+            message: "No Game to Cancel Looking For",
+        });
+    }
+
+    let mazeIsOn = game.rows[0].maze_setting !== "Off";
+    let lightsOutIsOn =  game.rows[0].lights_out_setting;
+
+    let queueName =
+        queuePrefix +
+        (mazeIsOn ? "maze" : "normal") +
+        "-" +
+        (lightsOutIsOn ? "lightsout" : "normal");
+    
+    const message = await getMessageFromQueue(queueName);
+    const messageGameId = message !== null ? JSON.parse(message.data).gameId : null;
+    let cancel = await sql`DELETE FROM games WHERE game_id = ${game.rows[0].game_id}`;
+    console.log("Game Cancelled", messageGameId, game.rows[0].game_id);
+    console.assert(messageGameId === game.rows[0].game_id, "Wrong Game Cancelled");
+    res.json({ message: "Game Cancelled", gameId: "" });
+
 });
 
 router.post("/get", async (req, res) => {
@@ -287,7 +323,7 @@ router.post("/move", async (req, res) => {
     let newMaze = maze;
 
     if (mazeSetting === "Shift") {
-        newMaze = scramble(maze, 10);
+        newMaze = scramble(maze, 25);
     }
 
     let gameIsOver = false;
@@ -302,16 +338,28 @@ router.post("/move", async (req, res) => {
 
     // Update the database
     if (mazeIsOn) {
-        if(gameIsOver){
-            await sql`UPDATE games SET moves = ${JSON.stringify(moves)}, maze = ${JSON.stringify(newMaze)}, board = ${newBoard}, status = 'finished' WHERE game_id = ${gameId}`;
-        }else{
-            await sql`UPDATE games SET moves = ${JSON.stringify(moves)}, maze = ${JSON.stringify(newMaze)}, board = ${newBoard} WHERE game_id = ${gameId}`;
+        if (gameIsOver) {
+            await sql`UPDATE games SET moves = ${JSON.stringify(
+                moves
+            )}, maze = ${JSON.stringify(
+                newMaze
+            )}, board = ${newBoard}, status = 'finished' WHERE game_id = ${gameId}`;
+        } else {
+            await sql`UPDATE games SET moves = ${JSON.stringify(
+                moves
+            )}, maze = ${JSON.stringify(
+                newMaze
+            )}, board = ${newBoard} WHERE game_id = ${gameId}`;
         }
     } else {
-        if(gameIsOver){
-            await sql`UPDATE games SET moves = ${JSON.stringify(moves)}, board = ${newBoard}, status = 'finished' WHERE game_id = ${gameId}`;
-        }else{
-            await sql`UPDATE games SET moves = ${JSON.stringify(moves)}, board = ${newBoard} WHERE game_id = ${gameId}`;
+        if (gameIsOver) {
+            await sql`UPDATE games SET moves = ${JSON.stringify(
+                moves
+            )}, board = ${newBoard}, status = 'finished' WHERE game_id = ${gameId}`;
+        } else {
+            await sql`UPDATE games SET moves = ${JSON.stringify(
+                moves
+            )}, board = ${newBoard} WHERE game_id = ${gameId}`;
         }
     }
 

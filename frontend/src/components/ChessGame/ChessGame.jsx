@@ -228,7 +228,7 @@ export function ChessGame() {
 
             // if maze is in shift mode, make shifts
             if (mazeSetting === "Shift") {
-                setMaze(scramble(maze, 10));
+                setMaze(scramble(maze, 25));
             }
 
             // if it's the computer's turn, make a move

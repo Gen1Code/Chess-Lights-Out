@@ -38,10 +38,15 @@ export function PlayButton() {
             apiSetsReponse("/game/resign", "POST", postData, setResponse);
         }
     }
+
+    function cancelGame(){
+        apiSetsReponse("/game/cancel", "GET", null, setResponse);
+    }
+
     return (
         <>
             {!playing && !looking && <button onClick={playGame}>Play</button>}
-            {looking && <button disabled>Looking for a game</button>}
+            {looking && <button onClick={cancelGame}>Looking for a game</button>}
             {playing && <button onClick={resign}>Resign</button>}
         </>
     );
