@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { sql } from "@vercel/postgres";
-import { publish, getMessageFromQueue } from "../lib/pubsub.js";
+import { publish } from "../lib/pubsub.js";
 import {
     possibleMoves,
     scramble,
@@ -15,8 +15,6 @@ import { Chess } from "chess.js";
 
 dotenv.config();
 const router = express.Router();
-
-let queuePrefix = process.env.ABLY_API_KEY.split(".")[0] + ":";
 
 async function createGame(gameId, userId, color, settings) {
     try {
@@ -84,20 +82,13 @@ router.post("/play", async (req, res) => {
     let mazeIsOn = settings.maze !== "Off";
     let lightsOutIsOn = settings.lightsOut;
 
-    let queueName =
-        queuePrefix +
-        (mazeIsOn ? "maze" : "normal") +
-        "-" +
-        (lightsOutIsOn ? "lightsout" : "normal");
-
-    const message = await getMessageFromQueue(queueName);
+    let openGames = await sql`SELECT game_id, white_player FROM games WHERE status = 'not started' AND lights_out_setting = ${lightsOutIsOn} AND maze_setting = ${settings.maze}`;
 
     // If a message is found, it means a game is found
-    if (message !== null) {
-        let msg = JSON.parse(message.data);
-
-        let gameId = msg.gameId;
-        let myColor = msg.color === "white" ? "black" : "white";
+    if (openGames.rows.length > 0) {
+        let game = openGames.rows[0]
+        let gameId = game.gameId;
+        let myColor = game.white_player ? "black" : "white";
 
         let maze = mazeIsOn ? getRandomMaze() : null;
 
@@ -120,12 +111,6 @@ router.post("/play", async (req, res) => {
         let gameId = uuidv4();
         let color = Math.random() < 0.5 ? "white" : "black";
 
-        let msg = { gameId: gameId, color: color, settings: settings };
-
-        // Publish the message to the queue
-        // console.log("Publishing to queue", queueName);
-        await publish(queueName, "gameCreation", JSON.stringify(msg));
-
         // Create a new game in the database
         await createGame(gameId, req.userId, color, settings);
 
@@ -145,26 +130,13 @@ router.get("/cancel", async (req, res) => {
 
     if (game.rows.length == 0) {
         return res.json({
-            message: "No Game to Cancel Looking For",
+            message: "No Game to Cancel",
         });
     }
 
-    let mazeIsOn = game.rows[0].maze_setting !== "Off";
-    let lightsOutIsOn =  game.rows[0].lights_out_setting;
-
-    let queueName =
-        queuePrefix +
-        (mazeIsOn ? "maze" : "normal") +
-        "-" +
-        (lightsOutIsOn ? "lightsout" : "normal");
-    
-    const message = await getMessageFromQueue(queueName);
-    const messageGameId = message !== null ? JSON.parse(message.data).gameId : null;
     let cancel = await sql`DELETE FROM games WHERE game_id = ${game.rows[0].game_id}`;
-    console.log("Game Cancelled", messageGameId, game.rows[0].game_id);
-    console.assert(messageGameId === game.rows[0].game_id, "Wrong Game Cancelled");
+    console.log("Game Cancelled:", game.rows[0].game_id);
     res.json({ message: "Game Cancelled", gameId: "" });
-
 });
 
 router.post("/get", async (req, res) => {
