@@ -78,7 +78,8 @@ router.post("/play", async (req, res) => {
     }
 
     let settings = req.body;
-    // console.log("settings", settings);
+    let userId = req.userId;
+
     let mazeIsOn = settings.maze !== "Off";
     let lightsOutIsOn = settings.lightsOut;
 
@@ -89,19 +90,18 @@ router.post("/play", async (req, res) => {
         let game = openGames.rows[0]
         let gameId = game.gameId;
         let myColor = game.white_player ? "black" : "white";
+        let otherColor = game.white_player ? "white" : "black";
 
         let maze = mazeIsOn ? getRandomMaze() : null;
 
         // Add the player to the game and start the game in the database
-        await addPlayerAndStartGame(gameId, req.userId, myColor, maze);
+        await addPlayerAndStartGame(gameId, userId, myColor, maze);
 
-        //Publish to GID channel
-        // console.log("Publishing to GID channel", msg.color, "Game is starting");
-        await publish(gameId, msg.color, "Game is starting");
+        //Publish STart Game to Ably channel
+        await publish(gameId, otherColor, "Game is starting");
 
         // Publish the maze if it is on
         if (mazeIsOn) {
-            // console.log("Publishing maze to GID channel", maze);
             await publish(gameId, "maze", maze);
         }
 
@@ -112,7 +112,7 @@ router.post("/play", async (req, res) => {
         let color = Math.random() < 0.5 ? "white" : "black";
 
         // Create a new game in the database
-        await createGame(gameId, req.userId, color, settings);
+        await createGame(gameId, userId, color, settings);
 
         // Return the game id and color to the user
         res.json({
