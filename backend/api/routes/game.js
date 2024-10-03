@@ -89,11 +89,13 @@ router.post("/play", async (req, res) => {
     let lightsOutIsOn = settings.lightsOut;
 
     let openGames = await sql`SELECT game_id, white_player FROM games WHERE status = 'not started' AND lights_out_setting = ${lightsOutIsOn} AND maze_setting = ${settings.maze} AND time_setting = ${settings.timeLimit}`;
-
-    // If a message is found, it means a game is found
+    
+    // If a game is found
     if (openGames.rows.length > 0) {
+        // console.log("Open Games have been Found");
+
         let game = openGames.rows[0]
-        let gameId = game.gameId;
+        let gameId = game.game_id;
         let myColor = game.white_player ? "black" : "white";
         let otherColor = game.white_player ? "white" : "black";
 
@@ -102,7 +104,7 @@ router.post("/play", async (req, res) => {
         // Add the player to the game and start the game in the database
         await addPlayerAndStartGame(gameId, userId, myColor, maze);
 
-        //Publish STart Game to Ably channel
+        //Publish Start Game to Ably channel
         await publish(gameId, otherColor, "Game is starting");
 
         // Publish the maze if it is on
@@ -131,7 +133,7 @@ router.post("/play", async (req, res) => {
 router.get("/cancel", async (req, res) => {
     // Check if the user is already in an ongoing game
     let game =
-        await sql`SELECT game_id, FROM games WHERE (white_player = ${req.userId} OR black_player = ${req.userId}) AND status = 'not started'`;
+        await sql`SELECT game_id FROM games WHERE (white_player = ${req.userId} OR black_player = ${req.userId}) AND status = 'not started'`;
 
     if (game.rows.length == 0) {
         return res.json({
