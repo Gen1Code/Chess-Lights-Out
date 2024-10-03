@@ -9,11 +9,11 @@ async function setupDatabase() {
         client = await sql.connect();
 
         await client.sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      user_id UUID UNIQUE NOT NULL,
-      name TEXT NOT NULL
-    );`;
+            CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            user_id UUID UNIQUE NOT NULL,
+            name TEXT NOT NULL
+        );`;
 
         await client.sql`CREATE TABLE IF NOT EXISTS games (
           id SERIAL PRIMARY KEY,
@@ -23,9 +23,11 @@ async function setupDatabase() {
           moves TEXT DEFAULT '[]',
           board TEXT DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
           maze TEXT DEFAULT '{}',
+          last_move_time BIGINT DEFAULT NULL,
           status VARCHAR(20) NOT NULL DEFAULT 'not started',
           lights_out_setting BOOLEAN NOT NULL DEFAULT FALSE,
           maze_setting VARCHAR(10) NOT NULL DEFAULT 'Off',
+          time_setting INTEGER NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );`;
 

@@ -49,6 +49,19 @@ export function ChessSettings() {
                     <option value="Shift">Shift</option>
                 </select>
             </label>
+            <a> </a>
+            <label>
+                Time:&nbsp;
+                <select
+                    name="timeLimit"
+                    value={settings.timeLimit}
+                    onChange={handleChange}
+                >
+                    <option value="180">3 Minutes</option>
+                    <option value="300">5 Minutes</option>
+                    <option value="600">10 Minutes</option>
+                </select>
+            </label>
         </div>
     );
 }

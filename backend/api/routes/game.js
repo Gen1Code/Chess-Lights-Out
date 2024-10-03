@@ -19,9 +19,9 @@ const router = express.Router();
 async function createGame(gameId, userId, color, settings) {
     try {
         if (color === "white") {
-            await sql`INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze})`;
+            await sql`INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting, time_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze}, ${settings.timeLimit})`;
         } else {
-            await sql`INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze})`;
+            await sql`INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting, time_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze}, ${settings.timeLimit})`;
         }
         console.log("Game created, gameId:", gameId);
         return true;
@@ -36,22 +36,25 @@ async function addPlayerAndStartGame(gameId, userId, color, maze) {
         // Add Player UID
         // Change status to ongoing
         // Add Maze if it exists
+        //Set the time of game start
+
+        let currentTime = Date.now();
 
         if (maze === null) {
             if (color === "white") {
-                await sql`UPDATE games SET white_player = ${userId}, status = 'ongoing' WHERE game_id = ${gameId}`;
+                await sql`UPDATE games SET white_player = ${userId}, status = 'ongoing', last_move_time = ${currentTime} WHERE game_id = ${gameId}`;
             } else {
-                await sql`UPDATE games SET black_player = ${userId}, status = 'ongoing' WHERE game_id = ${gameId}`;
+                await sql`UPDATE games SET black_player = ${userId}, status = 'ongoing', last_move_time = ${currentTime} WHERE game_id = ${gameId}`;
             }
         } else {
             if (color === "white") {
                 await sql`UPDATE games SET white_player = ${userId}, maze = ${JSON.stringify(
                     maze
-                )}, status = 'ongoing' WHERE game_id = ${gameId}`;
+                )}, status = 'ongoing', last_move_time = ${currentTime} WHERE game_id = ${gameId}`;
             } else {
                 await sql`UPDATE games SET black_player = ${userId}, maze = ${JSON.stringify(
                     maze
-                )}, status = 'ongoing' WHERE game_id = ${gameId}`;
+                )}, status = 'ongoing', last_move_time = ${currentTime} WHERE game_id = ${gameId}`;
             }
         }
 
@@ -80,10 +83,12 @@ router.post("/play", async (req, res) => {
     let settings = req.body;
     let userId = req.userId;
 
+    console.log("Settings",settings);
+
     let mazeIsOn = settings.maze !== "Off";
     let lightsOutIsOn = settings.lightsOut;
 
-    let openGames = await sql`SELECT game_id, white_player FROM games WHERE status = 'not started' AND lights_out_setting = ${lightsOutIsOn} AND maze_setting = ${settings.maze}`;
+    let openGames = await sql`SELECT game_id, white_player FROM games WHERE status = 'not started' AND lights_out_setting = ${lightsOutIsOn} AND maze_setting = ${settings.maze} AND time_setting = ${settings.timeLimit}`;
 
     // If a message is found, it means a game is found
     if (openGames.rows.length > 0) {
@@ -126,7 +131,7 @@ router.post("/play", async (req, res) => {
 router.get("/cancel", async (req, res) => {
     // Check if the user is already in an ongoing game
     let game =
-        await sql`SELECT game_id, maze_setting, lights_out_setting FROM games WHERE (white_player = ${req.userId} OR black_player = ${req.userId}) AND status = 'not started'`;
+        await sql`SELECT game_id, FROM games WHERE (white_player = ${req.userId} OR black_player = ${req.userId}) AND status = 'not started'`;
 
     if (game.rows.length == 0) {
         return res.json({
@@ -180,6 +185,7 @@ router.post("/get", async (req, res) => {
 
 router.post("/resign", async (req, res) => {
     let gameId = req.body.gameId;
+    console.log("Resigning:", gameId);
     let game =
         await sql`SELECT white_player, black_player FROM games WHERE game_id = ${gameId}`;
 
