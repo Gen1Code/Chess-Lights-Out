@@ -57,9 +57,9 @@ export function ChessSettings() {
                     value={settings.timeLimit}
                     onChange={handleChange}
                 >
-                    <option value="180">3 Minutes</option>
-                    <option value="300">5 Minutes</option>
-                    <option value="600">10 Minutes</option>
+                    <option value="180000">3 Minutes</option>
+                    <option value="300000">5 Minutes</option>
+                    <option value="600000">10 Minutes</option>
                 </select>
             </label>
         </div>

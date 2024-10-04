@@ -18,10 +18,11 @@ const router = express.Router();
 
 async function createGame(gameId, userId, color, settings) {
     try {
-        await sql`INSERT INTO games 
-            (game_id, ${color}_player, lights_out_setting, maze_setting, time_setting) 
-        VALUES 
-            (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze}, ${settings.timeLimit})`;
+        if (color === "white") {
+            await sql`INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting, time_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze}, ${settings.timeLimit})`;
+        } else {
+            await sql`INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting, time_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze}, ${settings.timeLimit})`;
+        }
         console.log("Game created, gameId:", gameId);
         return true;
     } catch (err) {
@@ -42,18 +43,24 @@ async function addPlayerAndStartGame(gameId, userId, color, maze, timeLimit) {
             status: "ongoing",
             activity_timestamp: currentTime,
             [color + "_player"]: userId,
-            white_time_remaning: timeLimit,
-            black_time_remaning: timeLimit,
+            white_time_remaining: timeLimit,
+            black_time_remaining: timeLimit,
         };
         if (maze !== null) {
             updates.maze = JSON.stringify(maze);
         }
 
-        await sql`UPDATE games SET
-            ${Object.entries(updates)
-                .map(([key, value]) => `${key} = ${value}`)
+        const query = `
+            UPDATE games
+            SET ${Object.entries(updates)
+                .map(([key], index) => `${key} = $${index + 1}`)
                 .join(", ")}
-        WHERE game_id = ${gameId}`;
+            WHERE game_id = $${Object.keys(updates).length + 1}`;
+
+        const updateValues = Object.values(updates);
+        updateValues.push(gameId);
+
+        await sql.query(query, updateValues);
 
         return true;
     } catch (err) {
@@ -101,7 +108,17 @@ router.post("/play", async (req, res) => {
         let maze = mazeIsOn ? getRandomMaze() : null;
 
         // Add the player to the game and start the game in the database
-        await addPlayerAndStartGame(gameId, userId, myColor, maze, timeLimit);
+        let success = await addPlayerAndStartGame(
+            gameId,
+            userId,
+            myColor,
+            maze,
+            timeLimit
+        );
+
+        if (!success) {
+            return res.json({ message: "Failed to Join Game" });
+        }
 
         //Publish Start Game to Ably channel
         await publish(gameId, otherColor, "Game is starting");
@@ -118,7 +135,11 @@ router.post("/play", async (req, res) => {
         let color = Math.random() < 0.5 ? "white" : "black";
 
         // Create a new game in the database
-        await createGame(gameId, userId, color, settings);
+        let success = await createGame(gameId, userId, color, settings);
+
+        if (!success) {
+            return res.json({ message: "Failed to Create Game" });
+        }
 
         // Return the game id and color to the user
         res.json({
@@ -308,8 +329,11 @@ router.post("/move", async (req, res) => {
     let moveTimeTaken = currentTime - game.rows[0].activity_timestamp;
     let remaingTimeLeft =
         color === "white"
-            ? game.rows[0].white_time_remaning - moveTimeTaken
-            : game.rows[0].black_time_remaning - moveTimeTaken;
+            ? game.rows[0].white_time_remaining - moveTimeTaken
+            : game.rows[0].black_time_remaining - moveTimeTaken;
+    console.log("Time:", currentTime);
+    console.log("Move Time Taken", moveTimeTaken);
+    console.log("Remaing For Player", remaingTimeLeft);
 
     // Check for the possible game endings
     if (remaingTimeLeft <= 0) {
@@ -332,7 +356,6 @@ router.post("/move", async (req, res) => {
     }
 
     let movesDB = JSON.stringify(moves);
-
     // Update the database
     let updates = {
         moves: movesDB,
@@ -352,11 +375,18 @@ router.post("/move", async (req, res) => {
         updates[color + "_time_remaining"] = remaingTimeLeft;
     }
 
-    await sql`UPDATE games SET
+    const query = `UPDATE games SET
         ${Object.entries(updates)
-            .map(([key, value]) => `${key} = ${value}`)
+            .map(([key], index) => `${key} = $${index + 1}`)
             .join(", ")}
-    WHERE game_id = ${gameId}`;
+    WHERE game_id = $${Object.entries(updates).length + 1}`;
+    const updateValues = Object.values(updates);
+    updateValues.push(gameId);
+    console.log(query);
+    console.log(updateValues);
+
+    let o = await sql.query(query, updateValues);
+    console.log(o);
 
     // console.log("Publishing to GID channel", otherColor, moveString);
     // Publish the move to the game channel
