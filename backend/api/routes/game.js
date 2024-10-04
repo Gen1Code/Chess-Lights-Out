@@ -18,11 +18,10 @@ const router = express.Router();
 
 async function createGame(gameId, userId, color, settings) {
     try {
-        if (color === "white") {
-            await sql`INSERT INTO games (game_id, white_player, lights_out_setting, maze_setting, time_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze}, ${settings.timeLimit})`;
-        } else {
-            await sql`INSERT INTO games (game_id, black_player, lights_out_setting, maze_setting, time_setting) VALUES (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze}, ${settings.timeLimit})`;
-        }
+        await sql`INSERT INTO games 
+            (game_id, ${color}_player, lights_out_setting, maze_setting, time_setting) 
+        VALUES 
+            (${gameId}, ${userId}, ${settings.lightsOut}, ${settings.maze}, ${settings.timeLimit})`;
         console.log("Game created, gameId:", gameId);
         return true;
     } catch (err) {
@@ -39,51 +38,22 @@ async function addPlayerAndStartGame(gameId, userId, color, maze, timeLimit) {
         //Set the time of game start
 
         let currentTime = Date.now();
-
-        if (maze === null) {
-            if (color === "white") {
-                await sql`UPDATE games 
-                SET 
-                    white_player = ${userId}, 
-                    status = 'ongoing', 
-                    activity_timestamp = ${currentTime}, 
-                    white_remaining_time = ${timeLimit}, 
-                    black_remaining_time = ${timeLimit} 
-                WHERE game_id = ${gameId}`;
-            } else {
-                await sql`UPDATE games 
-                SET 
-                    black_player = ${userId}, 
-                    status = 'ongoing', 
-                    activity_timestamp = ${currentTime}, 
-                    white_remaining_time = ${timeLimit}, 
-                    black_remaining_time = ${timeLimit} 
-                WHERE game_id = ${gameId}`;
-            }
-        } else {
-            let mazeJSON = JSON.stringify(maze);
-            if (color === "white") {
-                await sql`UPDATE games 
-                SET 
-                    white_player = ${userId}, 
-                    maze = ${mazeJSON}, 
-                    status = 'ongoing', 
-                    activity_timestamp = ${currentTime}, 
-                    white_remaining_time = ${timeLimit}, 
-                    black_remaining_time = ${timeLimit}
-                WHERE game_id = ${gameId}`;
-            } else {
-                await sql`UPDATE games 
-                SET 
-                    black_player = ${userId}, 
-                    maze = ${mazeJSON}, 
-                    status = 'ongoing', 
-                    activity_timestamp = ${currentTime}, 
-                    white_remaining_time = ${timeLimit}, 
-                    black_remaining_time = ${timeLimit}
-                WHERE game_id = ${gameId}`;
-            }
+        let updates = {
+            status: "ongoing",
+            activity_timestamp: currentTime,
+            [color + "_player"]: userId,
+            white_time_remaning: timeLimit,
+            black_time_remaning: timeLimit,
+        };
+        if (maze !== null) {
+            updates.maze = JSON.stringify(maze);
         }
+
+        await sql`UPDATE games SET
+            ${Object.entries(updates)
+                .map(([key, value]) => `${key} = ${value}`)
+                .join(", ")}
+        WHERE game_id = ${gameId}`;
 
         return true;
     } catch (err) {
