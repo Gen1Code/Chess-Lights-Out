@@ -191,6 +191,8 @@ router.post("/get", async (req, res) => {
         board: gameBoard,
         maze: gameMaze,
         maze_setting: gameMazeSetting,
+        white_time_remaining: whiteTimeRemaining,
+        black_time_remaining: blackTimeRemaining,
     } = game.rows[0];
 
     res.json({
@@ -203,6 +205,7 @@ router.post("/get", async (req, res) => {
         lightsOutSetting: gameLightsOutSetting,
         maze: JSON.parse(gameMaze),
         mazeSetting: gameMazeSetting,
+        timesRemaining: [whiteTimeRemaining, blackTimeRemaining],
     });
 });
 
@@ -272,7 +275,7 @@ router.post("/move", async (req, res) => {
         chessGame = new Chess(board);
     } else {
         chessGame = new Chess();
-        chessGame.loadPgn(moves.join(" ")); // TODO: check if this works might need to add turn numbers
+        chessGame.loadPgn(moves.join(" "));
     }
 
     let turn = chessGame.turn();
@@ -388,9 +391,9 @@ router.post("/move", async (req, res) => {
     let o = await sql.query(query, updateValues);
     console.log(o);
 
-    // console.log("Publishing to GID channel", otherColor, moveString);
-    // Publish the move to the game channel
-    await publish(gameId, otherColor, moveString);
+    // console.log("Publishing to GID channel", otherColor, moveString + " " + remaingTimeLeft);
+    // Publish the move and timeLeft to the game channel
+    await publish(gameId, otherColor, moveString + " " + remaingTimeLeft);
 
     // Publish the new maze if it was shifted
     if (mazeSetting === "Shift") {
@@ -405,7 +408,7 @@ router.post("/move", async (req, res) => {
         await publish(gameId, "white", gameOverMsg);
     }
 
-    res.json({ message: "Move sent" });
+    res.json({ message: "Move sent", timeRemaining: remaingTimeLeft });
 });
 
 export default router;

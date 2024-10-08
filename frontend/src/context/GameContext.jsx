@@ -29,6 +29,7 @@ export const GameProvider = ({ children }) => {
     const [game, setGame] = useState(new Chess());
     const [maze, setMaze] = useState(() => getRandomMaze());
     const [moves, setMoves] = useState([]);
+    const [timesRemaining, setTimesRemaining] = useState([600000,600000])
 
     const [response, setResponse] = useState(null);
 
@@ -117,10 +118,12 @@ export const GameProvider = ({ children }) => {
                 let maze = response.maze;
                 let board = response.board;
                 let moves = response.moves;
+                let timesRemaining = response.timesRemaining;
 
                 setMoves(moves);
                 setGame(new Chess(board));
                 setMaze(maze);
+                setTimesRemaining(timesRemaining)
             }
 
             if (response.gameId) {
@@ -149,6 +152,8 @@ export const GameProvider = ({ children }) => {
                 setMaze,
                 moves,
                 setMoves,
+                timesRemaining,
+                setTimesRemaining,
                 setResponse,
             }}
         >

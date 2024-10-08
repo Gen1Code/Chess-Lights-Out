@@ -33,6 +33,8 @@ export function ChessGame() {
         setMaze,
         moves,
         setMoves,
+        timesRemaining,
+        setTimesRemaining,
     } = useContext(GameContext);
 
     let ably = useAbly();
@@ -54,6 +56,7 @@ export function ChessGame() {
     const currentGameSettingsRef = useRef(currentGameSettings);
     const mazeRef = useRef(maze);
     const movesRef = useRef(moves);
+    const timesRemainingRef = useRef(timesRemaining);
 
     const turn = game.turn() === "w" ? "white" : "black";
     const inCheck = mazeIsOn
@@ -118,7 +121,7 @@ export function ChessGame() {
         return true;
     }
 
-    function onDrop(sourceSquare, targetSquare, piece) {
+    async function onDrop(sourceSquare, targetSquare, piece) {
         if (turn !== orientation || !playing) return;
 
         let move = {
@@ -133,7 +136,16 @@ export function ChessGame() {
 
         let moveWasValid = makeAMove(move);
         if (!singlePlayer && moveWasValid) {
-            api("/game/move", "POST", { gameId: gameId, move: move });
+            let res = await api("/game/move", "POST", { gameId: gameId, move: move });
+            if(res.error !== undefined){
+                console.log(res);
+                //TODO: Retry Move depending on error
+            }else{
+                let tR = timesRemaining;
+                let playerIndex = orientation[0] === "w" ? 0 : 1;
+                tR[playerIndex] = res.timeRemaining;
+                setTimesRemaining(tR);
+            }
         }
     }
 
@@ -240,12 +252,12 @@ export function ChessGame() {
 
     useEffect(() => {
         movesRef.current = moves;
-    }, [moves]);
+        timesRemainingRef.current = timesRemaining;
+    }, [moves, timesRemaining]);
 
     // If something occurs that changes the board, style the squares
     useEffect(() => {
         styleSquares(game, maze, orientation);
-
         gameRef.current = game;
         currentGameSettingsRef.current = currentGameSettings;
         mazeRef.current = maze;
@@ -296,6 +308,10 @@ export function ChessGame() {
 
             setGame(newGame);
             setMoves([]);
+            setTimesRemaining([
+                currentGameSettings.timeLimit,
+                currentGameSettings.timeLimit,
+            ]);
 
             if (singlePlayer) {
                 // Generate a random maze
@@ -347,16 +363,21 @@ export function ChessGame() {
                         status: data,
                     }));
                 } else {
-                    // console.log("Move received:", data);
+                    console.log("Data received:", data);
+
+                    let dataSplit = data.split(" ");
+
                     let move = {
-                        from: data.slice(0, 2),
-                        to: data.slice(2, 4),
+                        from: dataSplit[0].slice(0, 2),
+                        to: dataSplit[0].slice(2, 4),
                     };
 
                     // Check if the move is a promotion
-                    if (data.length > 4) {
-                        move.promotion = data[4];
+                    if (dataSplit[0].length > 4) {
+                        move.promotion = dataSplit[0][4];
                     }
+
+                    let playerTimeRemaining = Number(dataSplit[1]);
 
                     const gameCopy = new Chess();
 
@@ -402,8 +423,14 @@ export function ChessGame() {
                     moveString += move.promotion ? move.promotion : "";
                     // console.log("Move made:", moveString);
                     newMoves.push(moveString);
+
+                    let tR = timesRemainingRef.current;
+                    let otherPlayerIndex = orientation[0] === "w" ? 1 : 0;
+                    tR[otherPlayerIndex] = playerTimeRemaining;
+
                     setMoves(newMoves);
                     setGame(gameCopy);
+                    setTimesRemaining(tR);
                 }
 
                 // console.log("Message received:", data);
@@ -433,7 +460,7 @@ export function ChessGame() {
         <div className="chessboard">
             <Chessboard
                 className="board"
-                // key={game.fen()} // This is a hack to force the board to update since Strict Mode + Context loading gives the library trouble Issue #119
+                // key={game.fen()} // This is a hack to force the board to update in Strict Mode, Context loading gives the library trouble Issue #119
                 position={game.fen()}
                 onPieceDrop={onDrop}
                 boardOrientation={orientation}
