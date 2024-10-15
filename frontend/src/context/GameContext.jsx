@@ -10,13 +10,13 @@ export const GameProvider = ({ children }) => {
         mode: "Multi",
         lightsOut: true,
         maze: "Static",
-        timeLimit: 600000,
+        timeLimit: 180000,
     });
     const [currentGameSettings, setCurrentGameSettings] = useState({
         mode: "Single",
         lightsOut: false,
         maze: "Shift",
-        timeLimit: 600000,
+        timeLimit: 180000,
         color: "white",
         gameId: "",
         status: "Haven't started yet",
@@ -29,7 +29,7 @@ export const GameProvider = ({ children }) => {
     const [game, setGame] = useState(new Chess());
     const [maze, setMaze] = useState(() => getRandomMaze());
     const [moves, setMoves] = useState([]);
-    const [timesRemaining, setTimesRemaining] = useState([600000,600000])
+    const [timesRemaining, setTimesRemaining] = useState([180000, 180000]);
 
     const [response, setResponse] = useState(null);
 
@@ -123,7 +123,7 @@ export const GameProvider = ({ children }) => {
                 setMoves(moves);
                 setGame(new Chess(board));
                 setMaze(maze);
-                setTimesRemaining(timesRemaining)
+                setTimesRemaining(timesRemaining);
             }
 
             if (response.gameId) {

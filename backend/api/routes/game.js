@@ -195,6 +195,8 @@ router.post("/get", async (req, res) => {
         black_time_remaining: blackTimeRemaining,
     } = game.rows[0];
 
+    //TODO: Handle time differences and pass correct times remaining into
+
     res.json({
         message: "Game",
         color: color,

@@ -19,9 +19,9 @@ import {
 import { styleForLightsOut, getLitupSquares } from "@utils/LightsOutUtils";
 import { gameOverMessage, findKing, SQUARES } from "@utils/ChessUtils";
 
-import "./ChessGame.css";
 import { useAbly } from "ably/react";
-import { api } from "../../utils/api";
+import { api } from "@utils/api";
+import "./ChessGame.css";
 
 export function ChessGame() {
     const {
@@ -140,19 +140,20 @@ export function ChessGame() {
             api("/game/move", "POST", {
                 gameId: gameId,
                 move: move,
-            }).then(res => {
-                setTimesRemaining(prevTimes => {
-                    const newTimes = [...prevTimes];
-                    const playerIndex = orientation[0] === "w" ? 0 : 1;
-                    newTimes[playerIndex] = res.timeRemaining;
-                    //console.log("Setting time Remaining", newTimes);
-                    return newTimes;
+            })
+                .then((res) => {
+                    setTimesRemaining((prevTimes) => {
+                        const newTimes = [...prevTimes];
+                        const playerIndex = orientation[0] === "w" ? 0 : 1;
+                        newTimes[playerIndex] = res.timeRemaining;
+                        //console.log("Setting time Remaining", newTimes);
+                        return newTimes;
+                    });
+                })
+                .catch((error) => {
+                    console.log("Error making move:", error);
+                    //TODO: Retry Move depending on error
                 });
-
-            }).catch(error => {
-                console.log("Error making move:",error);
-                //TODO: Retry Move depending on error
-            });
         }
     }
 
@@ -467,11 +468,7 @@ export function ChessGame() {
 
     return (
         <div className="chessboard">
-            <ChessTimer
-                timesRemaining={timesRemaining}
-                orientation={orientation}
-                turn={turn}
-            >
+            <ChessTimer turn={turn}>
                 {!playing && <div className="mist-overlay"></div>}
                 <GameOverCard className="card" />
 

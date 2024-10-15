@@ -21,18 +21,19 @@
     outline-style: solid;
     outline-color: white;
     outline-width: 2px;
+    opacity: 0.5;
   }
   
-  .chess-timer.white {
+  .chess-timer.w {
     background-color: #f0d9b5;
     color: #b58863;
   }
   
-  .chess-timer.black {
+  .chess-timer.b {
     background-color: #262323;
     color: #f0d9b5;
   }
   
   .chess-timer.active {
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  }
+    opacity: 1;
+}
