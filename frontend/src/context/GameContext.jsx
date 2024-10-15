@@ -30,6 +30,7 @@ export const GameProvider = ({ children }) => {
     const [maze, setMaze] = useState(() => getRandomMaze());
     const [moves, setMoves] = useState([]);
     const [timesRemaining, setTimesRemaining] = useState([180000, 180000]);
+    const [activityTimestamp, setActivityTimestamp] = useState(null);
 
     const [response, setResponse] = useState(null);
 
@@ -71,6 +72,7 @@ export const GameProvider = ({ children }) => {
                     color: response.color,
                     status: "Starting",
                 });
+                setActivityTimestamp(response.activityTimestamp)
             } else if (message === "Resigned") {
                 setCurrentGameSettings((prev) => ({
                     ...prev,
@@ -119,11 +121,13 @@ export const GameProvider = ({ children }) => {
                 let board = response.board;
                 let moves = response.moves;
                 let timesRemaining = response.timesRemaining;
+                let activityTimestamp = response.activityTimestamp
 
                 setMoves(moves);
                 setGame(new Chess(board));
                 setMaze(maze);
                 setTimesRemaining(timesRemaining);
+                setActivityTimestamp(activityTimestamp)
             }
 
             if (response.gameId) {
@@ -155,6 +159,8 @@ export const GameProvider = ({ children }) => {
                 timesRemaining,
                 setTimesRemaining,
                 setResponse,
+                activityTimestamp,
+                setActivityTimestamp,
             }}
         >
             {children}

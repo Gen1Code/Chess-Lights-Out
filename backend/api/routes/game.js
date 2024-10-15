@@ -87,8 +87,6 @@ router.post("/play", async (req, res) => {
     let settings = req.body;
     let userId = req.userId;
 
-    console.log("Settings", settings);
-
     let mazeIsOn = settings.maze !== "Off";
     let lightsOutIsOn = settings.lightsOut;
     let timeLimit = settings.timeLimit;
@@ -100,10 +98,11 @@ router.post("/play", async (req, res) => {
     if (openGames.rows.length > 0) {
         // console.log("Open Games have been Found");
 
-        let game = openGames.rows[0];
-        let gameId = game.game_id;
-        let myColor = game.white_player ? "black" : "white";
-        let otherColor = game.white_player ? "white" : "black";
+        const game = openGames.rows[0];
+        const gameId = game.game_id;
+        const myColor = game.white_player ? "black" : "white";
+        const otherColor = game.white_player ? "white" : "black";
+        const activityTimestamp = Date.now();
 
         let maze = mazeIsOn ? getRandomMaze() : null;
 
@@ -121,14 +120,19 @@ router.post("/play", async (req, res) => {
         }
 
         //Publish Start Game to Ably channel
-        await publish(gameId, otherColor, "Game is starting");
+        await publish(gameId, otherColor, "Game is starting,"+activityTimestamp);
 
         // Publish the maze if it is on
         if (mazeIsOn) {
             await publish(gameId, "maze", maze);
         }
 
-        res.json({ message: "Game Found", gameId: gameId, color: myColor });
+        res.json({
+            message: "Game Found",
+            gameId: gameId,
+            color: myColor,
+            activityTimestamp: activityTimestamp,
+        });
     } else {
         // If no game is found, create a new game
         let gameId = uuidv4();
@@ -193,9 +197,8 @@ router.post("/get", async (req, res) => {
         maze_setting: gameMazeSetting,
         white_time_remaining: whiteTimeRemaining,
         black_time_remaining: blackTimeRemaining,
+        activity_timestamp: activityTimestamp,
     } = game.rows[0];
-
-    //TODO: Handle time differences and pass correct times remaining into
 
     res.json({
         message: "Game",
@@ -208,6 +211,7 @@ router.post("/get", async (req, res) => {
         maze: JSON.parse(gameMaze),
         mazeSetting: gameMazeSetting,
         timesRemaining: [whiteTimeRemaining, blackTimeRemaining],
+        activityTimestamp: activityTimestamp,
     });
 });
 
@@ -320,6 +324,8 @@ router.post("/move", async (req, res) => {
         chessGame.move(move);
     }
 
+    const currentTime = Date.now();
+
     let newBoard = chessGame.fen();
     let newMaze = maze;
 
@@ -330,7 +336,6 @@ router.post("/move", async (req, res) => {
     let gameIsOver = false;
     let gameOverMsg = "";
 
-    let currentTime = Date.now();
     let moveTimeTaken = currentTime - game.rows[0].activity_timestamp;
     let remaingTimeLeft =
         color === "white"
@@ -387,15 +392,16 @@ router.post("/move", async (req, res) => {
     WHERE game_id = $${Object.entries(updates).length + 1}`;
     const updateValues = Object.values(updates);
     updateValues.push(gameId);
-    console.log(query);
     console.log(updateValues);
 
-    let o = await sql.query(query, updateValues);
-    console.log(o);
+    await sql.query(query, updateValues);
 
-    // console.log("Publishing to GID channel", otherColor, moveString + " " + remaingTimeLeft);
-    // Publish the move and timeLeft to the game channel
-    await publish(gameId, otherColor, moveString + " " + remaingTimeLeft);
+    // Publish the move, time when move was taken, timeLeft and to the game channel
+    await publish(
+        gameId,
+        otherColor,
+        moveString + "," + currentTime + "," + remaingTimeLeft
+    );
 
     // Publish the new maze if it was shifted
     if (mazeSetting === "Shift") {
@@ -410,7 +416,11 @@ router.post("/move", async (req, res) => {
         await publish(gameId, "white", gameOverMsg);
     }
 
-    res.json({ message: "Move sent", timeRemaining: remaingTimeLeft });
+    res.json({
+        message: "Move sent",
+        timeRemaining: remaingTimeLeft,
+        activityTimestamp: currentTime,
+    });
 });
 
 export default router;

@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, useRef } from "react";
+import { useEffect, useState, useContext, useRef, act } from "react";
 import { GameContext } from "@context/GameContext";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
@@ -36,6 +36,7 @@ export function ChessGame() {
         setMoves,
         timesRemaining,
         setTimesRemaining,
+        setActivityTimestamp
     } = useContext(GameContext);
 
     let ably = useAbly();
@@ -149,6 +150,7 @@ export function ChessGame() {
                         //console.log("Setting time Remaining", newTimes);
                         return newTimes;
                     });
+                    setActivityTimestamp(res.activityTimestamp)
                 })
                 .catch((error) => {
                     console.log("Error making move:", error);
@@ -346,47 +348,53 @@ export function ChessGame() {
             //     gameId,
             //     orientation
             // );
-            ably.channels.get(gameId).subscribe(orientation, (msg) => {
-                let data = msg.data;
-                if (data === "Game is starting") {
+            const gameChannel = ably.channels.get(gameId);
+            gameChannel.setOptions({ params: { rewind: "0" } });
+            gameChannel.subscribe(orientation, (msg) => {
+                let dataSplit = msg.data.split(",");
+                let dataStatus = dataSplit[0];
+
+                if (dataStatus === "Game is starting") {
                     setCurrentGameSettings((prev) => ({
                         ...prev,
                         status: "Starting",
                     }));
-                } else if (data === "Opponent resigned") {
+                    setActivityTimestamp(dataSplit[1])
+                } else if (dataStatus === "Opponent resigned") {
                     setCurrentGameSettings((prev) => ({
                         ...prev,
                         status: "Opponent resigned!",
                     }));
                 } else if (
                     // Check if the game is over
-                    data === "Black is in Checkmate" ||
-                    data === "White is in Checkmate" ||
-                    data === "Stalemate" ||
-                    data === "Insufficient Material" ||
-                    data === "Threefold Repetition" ||
-                    data === "50 Move Rule"
+                    dataStatus === "Black is in Checkmate" ||
+                    dataStatus === "White is in Checkmate" ||
+                    dataStatus === "Stalemate" ||
+                    dataStatus === "Insufficient Material" ||
+                    dataStatus === "Threefold Repetition" ||
+                    dataStatus === "50 Move Rule"
                 ) {
                     setCurrentGameSettings((prev) => ({
                         ...prev,
-                        status: data,
+                        status: dataStatus,
                     }));
                 } else {
-                    console.log("Data received:", data);
+                    console.log("Data received:", dataSplit);
 
-                    let dataSplit = data.split(" ");
+                    let dataMove = dataSplit[0];
 
                     let move = {
-                        from: dataSplit[0].slice(0, 2),
-                        to: dataSplit[0].slice(2, 4),
+                        from: dataMove.slice(0, 2),
+                        to: dataMove.slice(2, 4),
                     };
 
                     // Check if the move is a promotion
-                    if (dataSplit[0].length > 4) {
-                        move.promotion = dataSplit[0][4];
+                    if (dataMove.length > 4) {
+                        move.promotion = dataMove[4];
                     }
 
-                    let playerTimeRemaining = Number(dataSplit[1]);
+                    let activityTimestamp = Number(dataSplit[1])
+                    let playerTimeRemaining = Number(dataSplit[2]);
 
                     const gameCopy = new Chess();
 
@@ -441,6 +449,7 @@ export function ChessGame() {
                     setGame(gameCopy);
                     //console.log("Setting time Remaining", tR);
                     setTimesRemaining(tR);
+                    setActivityTimestamp(activityTimestamp);
                 }
 
                 // console.log("Message received:", data);

@@ -13,12 +13,8 @@ const formatTime = (milliseconds) => {
 const refreshInterval = 500;
 
 export function ChessTimer({ turn, children }) {
-    const {
-        currentGameSettings,
-        setCurrentGameSettings,
-        timesRemaining,
-        gameId,
-    } = useContext(GameContext);
+    const { currentGameSettings, timesRemaining, gameId, activityTimestamp } =
+        useContext(GameContext);
     const [times, setTimes] = useState(timesRemaining);
     const intervalRef = useRef(null);
     const orientation = currentGameSettings.color[0];
@@ -33,16 +29,17 @@ export function ChessTimer({ turn, children }) {
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
         }
-        if(status === "Playing"){
+        if (status === "Playing") {
             intervalRef.current = setInterval(() => {
                 const activePlayerIndex = turn[0] === "w" ? 0 : 1;
                 setTimes((prevTimes) => {
                     const newTimes = [...prevTimes];
                     let newTime = Math.max(
-                        newTimes[activePlayerIndex] - refreshInterval,
+                        timesRemaining[activePlayerIndex] -
+                            (Date.now() - activityTimestamp),
                         0
                     );
-    
+
                     if (newTime === 0) {
                         clearInterval(intervalRef.current);
                         intervalRef.current = null;
@@ -51,9 +48,9 @@ export function ChessTimer({ turn, children }) {
                             gameId: gameId,
                         });
                     }
-    
+
                     newTimes[activePlayerIndex] = newTime;
-    
+
                     return newTimes;
                 });
             }, refreshInterval);
@@ -62,7 +59,7 @@ export function ChessTimer({ turn, children }) {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [turn]);
+    }, [activityTimestamp, status]);
 
     return (
         <div className="chess-game-container">
