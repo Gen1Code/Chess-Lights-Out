@@ -3,6 +3,7 @@ import { GameContext } from "@context/GameContext";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { GameOverCard } from "@components/GameOverCard";
+import { ChessTimer } from "@components/ChessTimer";
 import { getBotMove } from "@utils/BasicChessBot";
 import {
     getRandomMaze,
@@ -121,7 +122,7 @@ export function ChessGame() {
         return true;
     }
 
-    async function onDrop(sourceSquare, targetSquare, piece) {
+    function onDrop(sourceSquare, targetSquare, piece) {
         if (turn !== orientation || !playing) return;
 
         let move = {
@@ -136,16 +137,22 @@ export function ChessGame() {
 
         let moveWasValid = makeAMove(move);
         if (!singlePlayer && moveWasValid) {
-            let res = await api("/game/move", "POST", { gameId: gameId, move: move });
-            if(res.error !== undefined){
-                console.log(res);
+            api("/game/move", "POST", {
+                gameId: gameId,
+                move: move,
+            }).then(res => {
+                setTimesRemaining(prevTimes => {
+                    const newTimes = [...prevTimes];
+                    const playerIndex = orientation[0] === "w" ? 0 : 1;
+                    newTimes[playerIndex] = res.timeRemaining;
+                    //console.log("Setting time Remaining", newTimes);
+                    return newTimes;
+                });
+
+            }).catch(error => {
+                console.log("Error making move:",error);
                 //TODO: Retry Move depending on error
-            }else{
-                let tR = timesRemaining;
-                let playerIndex = orientation[0] === "w" ? 0 : 1;
-                tR[playerIndex] = res.timeRemaining;
-                setTimesRemaining(tR);
-            }
+            });
         }
     }
 
@@ -308,6 +315,7 @@ export function ChessGame() {
 
             setGame(newGame);
             setMoves([]);
+            //console.log("Setting Time Remainings to Time Limit");
             setTimesRemaining([
                 currentGameSettings.timeLimit,
                 currentGameSettings.timeLimit,
@@ -430,6 +438,7 @@ export function ChessGame() {
 
                     setMoves(newMoves);
                     setGame(gameCopy);
+                    //console.log("Setting time Remaining", tR);
                     setTimesRemaining(tR);
                 }
 
@@ -458,18 +467,28 @@ export function ChessGame() {
 
     return (
         <div className="chessboard">
-            <Chessboard
-                className="board"
-                // key={game.fen()} // This is a hack to force the board to update in Strict Mode, Context loading gives the library trouble Issue #119
-                position={game.fen()}
-                onPieceDrop={onDrop}
-                boardOrientation={orientation}
-                isDraggablePiece={({ piece }) => piece[0] === orientation[0]}
-                arePiecesDraggable={playing}
-                customSquareStyles={{ ...squareStyles, ...checkStyle }}
-            />
-            {!playing && <div className="mist-overlay"></div>}
-            <GameOverCard className="card" />
+            <ChessTimer
+                timesRemaining={timesRemaining}
+                orientation={orientation}
+                turn={turn}
+            >
+                {!playing && <div className="mist-overlay"></div>}
+                <GameOverCard className="card" />
+
+                <Chessboard
+                    className="board"
+                    // key={game.fen()} // This is a hack to force the board to update in Strict Mode, Context loading gives the library trouble Issue #119
+                    position={game.fen()}
+                    onPieceDrop={onDrop}
+                    boardOrientation={orientation}
+                    isDraggablePiece={({ piece }) =>
+                        piece[0] === orientation[0]
+                    }
+                    arePiecesDraggable={playing}
+                    customSquareStyles={{ ...squareStyles, ...checkStyle }}
+                />
+            </ChessTimer>
+
             {process.env.NODE_ENV === "development" && (
                 <>
                     <button onClick={forcegame}>Force Game</button>

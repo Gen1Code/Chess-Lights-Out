@@ -1,0 +1,38 @@
+.card{
+    padding: 2em;
+    border-radius: 10px;
+}
+
+.chess-game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  
+  .chess-timer {
+    width: 20%;
+    text-align: center;
+    padding: 5px;
+    margin: 7px;
+    font-size: 1.5em;
+    font-weight: bold;
+    border-radius: 5px;
+    outline-style: solid;
+    outline-color: white;
+    outline-width: 2px;
+  }
+  
+  .chess-timer.white {
+    background-color: #f0d9b5;
+    color: #b58863;
+  }
+  
+  .chess-timer.black {
+    background-color: #262323;
+    color: #f0d9b5;
+  }
+  
+  .chess-timer.active {
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
