@@ -612,6 +612,11 @@ export function makeMoveInMaze(game, move) {
         }
     }
 
+    //Handle No Castling Rights
+    if(fen[2] === ""){
+        fen[2] = "-";
+    }
+
     // En passant
     let enPassantSquare = fen[3];
     if (move.flags.includes("b")) {

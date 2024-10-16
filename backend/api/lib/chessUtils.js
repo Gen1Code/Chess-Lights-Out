@@ -601,6 +601,11 @@ export function makeMoveInMaze(game, move) {
             fen[2] = fen[2].replace(/[KQ]/g, "");
         }
     }
+    
+    //Handle No Castling Rights
+    if(fen[2] === ""){
+        fen[2] = "-";
+    }
 
     // En passant
     let enPassantSquare = fen[3];

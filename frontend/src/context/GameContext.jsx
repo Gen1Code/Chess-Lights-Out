@@ -9,13 +9,13 @@ export const GameProvider = ({ children }) => {
     const [settings, setSettings] = useState({
         mode: "Multi",
         lightsOut: true,
-        maze: "Static",
+        maze: "Off",
         timeLimit: 180000,
     });
     const [currentGameSettings, setCurrentGameSettings] = useState({
         mode: "Single",
         lightsOut: false,
-        maze: "Shift",
+        maze: "Off",
         timeLimit: 180000,
         color: "white",
         gameId: "",
