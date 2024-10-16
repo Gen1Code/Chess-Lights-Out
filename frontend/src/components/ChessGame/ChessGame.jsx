@@ -36,7 +36,7 @@ export function ChessGame() {
         setMoves,
         timesRemaining,
         setTimesRemaining,
-        setActivityTimestamp
+        setActivityTimestamp,
     } = useContext(GameContext);
 
     let ably = useAbly();
@@ -150,7 +150,7 @@ export function ChessGame() {
                         //console.log("Setting time Remaining", newTimes);
                         return newTimes;
                     });
-                    setActivityTimestamp(res.activityTimestamp)
+                    setActivityTimestamp(res.activityTimestamp);
                 })
                 .catch((error) => {
                     console.log("Error making move:", error);
@@ -235,7 +235,7 @@ export function ChessGame() {
             );
         }
 
-        if (mazeIsOn) {
+        if (realMaze !== null) {
             styles = styleForMaze(styles, getMazeBorders(maze), orientation);
         }
 
@@ -359,7 +359,7 @@ export function ChessGame() {
                         ...prev,
                         status: "Starting",
                     }));
-                    setActivityTimestamp(dataSplit[1])
+                    setActivityTimestamp(dataSplit[1]);
                 } else if (dataStatus === "Opponent resigned") {
                     setCurrentGameSettings((prev) => ({
                         ...prev,
@@ -395,7 +395,7 @@ export function ChessGame() {
                         move.promotion = dataMove[4];
                     }
 
-                    let activityTimestamp = Number(dataSplit[1])
+                    let activityTimestamp = Number(dataSplit[1]);
                     let playerTimeRemaining = Number(dataSplit[2]);
 
                     const gameCopy = new Chess();
