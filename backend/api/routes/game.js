@@ -120,7 +120,11 @@ router.post("/play", async (req, res) => {
         }
 
         //Publish Start Game to Ably channel
-        await publish(gameId, otherColor, "Game is starting,"+activityTimestamp);
+        await publish(
+            gameId,
+            otherColor,
+            "Game is starting," + activityTimestamp
+        );
 
         // Publish the maze if it is on
         if (mazeIsOn) {
@@ -234,7 +238,7 @@ router.post("/resign", async (req, res) => {
         return res.json({ message: "You are not in this game" });
     }
 
-    let otherColor = color === "white" ? "black" : "white";
+    let otherColor = color[0] === "w" ? "black" : "white";
 
     // Update the game status to finished
     await sql`UPDATE games SET status = 'finished' WHERE game_id = ${gameId}`;
@@ -269,7 +273,8 @@ router.post("/move", async (req, res) => {
     } else {
         return res.json({ message: "You are not in this game" });
     }
-    let otherColor = color === "white" ? "black" : "white";
+    let isColorWhite = color[0] === "w";
+    let otherColor = isColorWhite ? "black" : "white";
 
     let board = game.rows[0].board;
     let moves = JSON.parse(game.rows[0].moves);
@@ -337,10 +342,9 @@ router.post("/move", async (req, res) => {
     let gameOverMsg = "";
 
     let moveTimeTaken = currentTime - game.rows[0].activity_timestamp;
-    let remaingTimeLeft =
-        color === "white"
-            ? game.rows[0].white_time_remaining - moveTimeTaken
-            : game.rows[0].black_time_remaining - moveTimeTaken;
+    let remaingTimeLeft = isColorWhite
+        ? game.rows[0].white_time_remaining - moveTimeTaken
+        : game.rows[0].black_time_remaining - moveTimeTaken;
     console.log("Time:", currentTime);
     console.log("Move Time Taken", moveTimeTaken);
     console.log("Remaing For Player", remaingTimeLeft);
@@ -348,7 +352,7 @@ router.post("/move", async (req, res) => {
     // Check for the possible game endings
     if (remaingTimeLeft <= 0) {
         gameIsOver = true;
-        gameOverMsg = color + " has Run out of Time";
+        gameOverMsg = (isColorWhite ? "White" : "Black") + " Ran out of Time";
     } else {
         moves.push(moveString);
         if (mazeIsOn) {
@@ -421,6 +425,64 @@ router.post("/move", async (req, res) => {
         timeRemaining: remaingTimeLeft,
         activityTimestamp: currentTime,
     });
+});
+
+router.post("/checkTime", async (req, res) => {
+    let userId = req.userId;
+    let gameId = req.body.gameId;
+
+    let gameRow = await sql`SELECT * FROM games WHERE game_id = ${gameId}`;
+
+    if (gameRow.rows.length === 0) {
+        return res.json({ message: "Game not found" });
+    }
+
+    let game = gameRow.rows[0];
+
+    if(game.status === "finished"){
+        return res.json({message: "Game already Finished"});
+    }
+
+    let turn = game.board.split(" ")[1];
+    let isWhiteTurn = turn === "w";
+    let color = isWhiteTurn ? "white" : "black";
+    let currentTime = Date.now();
+
+    let deltaTime = currentTime - game.activity_timestamp;
+    let remaingTimeLeft = isWhiteTurn
+        ? game.white_time_remaining - deltaTime
+        : game.black_time_remaining - deltaTime;
+
+    if (remaingTimeLeft <= 0) {
+        //End Game
+
+        let updates = {
+            activity_timestamp: currentTime,
+            status: "finished",
+            [color + "_time_remaining"]: 0,
+        };
+
+        const query = `UPDATE games SET
+            ${Object.entries(updates)
+                .map(([key], index) => `${key} = $${index + 1}`)
+                .join(", ")}
+        WHERE game_id = $${Object.entries(updates).length + 1}`;
+        const updateValues = Object.values(updates);
+        updateValues.push(gameId);
+        console.log(updateValues);
+
+        await sql.query(query, updateValues);
+
+        let gameOverMsg =
+            (isWhiteTurn ? "White" : "Black") + " Ran Out of Time";
+
+        await publish(gameId, "black", gameOverMsg);
+        await publish(gameId, "white", gameOverMsg);
+
+        return res.json({ message: color + " Ran Out of Time" });
+    }
+
+    res.json({ message: (isWhiteTurn ? "White" : "Black") + " Still has Time Left" });
 });
 
 export default router;

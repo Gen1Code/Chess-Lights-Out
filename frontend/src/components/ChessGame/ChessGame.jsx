@@ -372,7 +372,9 @@ export function ChessGame() {
                     dataStatus === "Stalemate" ||
                     dataStatus === "Insufficient Material" ||
                     dataStatus === "Threefold Repetition" ||
-                    dataStatus === "50 Move Rule"
+                    dataStatus === "50 Move Rule" ||
+                    dataStatus === "White Ran Out of Time" ||
+                    dataStatus === "Black Ran Out of Time"
                 ) {
                     setCurrentGameSettings((prev) => ({
                         ...prev,
