@@ -25,7 +25,7 @@ async function setupDatabase() {
           activity_timestamp  BIGINT DEFAULT NULL,
           moves TEXT DEFAULT '[]',
           board TEXT DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-          maze TEXT DEFAULT '{}',
+          maze TEXT DEFAULT NULL,
           status VARCHAR(20) NOT NULL DEFAULT 'not started',
           lights_out_setting BOOLEAN NOT NULL DEFAULT FALSE,
           maze_setting VARCHAR(10) NOT NULL DEFAULT 'Off',

@@ -169,8 +169,7 @@ router.get("/cancel", async (req, res) => {
         });
     }
 
-    let cancel =
-        await sql`DELETE FROM games WHERE game_id = ${game.rows[0].game_id}`;
+    await sql`DELETE FROM games WHERE game_id = ${game.rows[0].game_id}`;
     console.log("Game Cancelled:", game.rows[0].game_id);
     res.json({ message: "Game Cancelled", gameId: "" });
 });
@@ -439,8 +438,8 @@ router.post("/checkTime", async (req, res) => {
 
     let game = gameRow.rows[0];
 
-    if(game.status === "finished"){
-        return res.json({message: "Game already Finished"});
+    if (game.status === "finished") {
+        return res.json({ message: "Game already Finished" });
     }
 
     let turn = game.board.split(" ")[1];
@@ -482,7 +481,9 @@ router.post("/checkTime", async (req, res) => {
         return res.json({ message: color + " Ran Out of Time" });
     }
 
-    res.json({ message: (isWhiteTurn ? "White" : "Black") + " Still has Time Left" });
+    res.json({
+        message: (isWhiteTurn ? "White" : "Black") + " Still has Time Left",
+    });
 });
 
 export default router;
