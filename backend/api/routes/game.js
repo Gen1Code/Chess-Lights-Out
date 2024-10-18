@@ -33,10 +33,10 @@ async function createGame(gameId, userId, color, settings) {
 
 async function addPlayerAndStartGame(gameId, userId, color, maze, timeLimit) {
     try {
+        // Change Status to ongoing
+        // Set the Time of game start
         // Add Player UID
-        // Change status to ongoing
-        // Add Maze if it exists
-        //Set the time of game start
+        // Add Time Limits for players
 
         let currentTime = Date.now();
         let updates = {
@@ -46,6 +46,8 @@ async function addPlayerAndStartGame(gameId, userId, color, maze, timeLimit) {
             white_time_remaining: timeLimit,
             black_time_remaining: timeLimit,
         };
+        
+        // Add Maze if it exists
         if (maze !== null) {
             updates.maze = JSON.stringify(maze);
         }

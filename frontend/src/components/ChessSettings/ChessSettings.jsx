@@ -9,7 +9,6 @@ export function ChessSettings() {
             ...prev,
             [name]: type === "checkbox" ? checked : value,
         }));
-        //console.log("Settings changed", name, type === 'checkbox' ? checked : value);
     };
 
     return (

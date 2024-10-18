@@ -312,7 +312,6 @@ export function ChessGame() {
 
             setGame(newGame);
             setMoves([]);
-            //console.log("Setting Time Remainings to Time Limit");
             setTimesRemaining([
                 currentGameSettings.timeLimit,
                 currentGameSettings.timeLimit,
@@ -337,6 +336,7 @@ export function ChessGame() {
 
     useEffect(() => {
         if (ably && !singlePlayer) {
+            // Subscribe to Ably Game Channel Black/White Event
             const gameChannel = ably.channels.get(gameId);
             gameChannel.setOptions({ params: { rewind: "0" } });
             gameChannel.subscribe(orientation, (msg) => {
@@ -440,8 +440,8 @@ export function ChessGame() {
                     setTimesRemaining(tR);
                     setActivityTimestamp(activityTimestamp);
                 }
-
             });
+            // Subscribe to Ably Game Channel Event Maze
             const mazeChannel = ably.channels.get(gameId);
             // User might miss the first maze message so rewind and grab it
             mazeChannel.setOptions({ params: { rewind: "1" } });
