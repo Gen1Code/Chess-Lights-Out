@@ -73,8 +73,6 @@ export function kingSurroundingSquares(kingSquare) {
 export function findKing(game, color) {
   let kingSquare = null;
   const board = game.board();
-  // console.log("findKing triggered with color:", color);
-  // console.log("board", board);
   board.forEach((row, i) => {
     row.forEach((piece, j) => {
       if (piece && piece.type === "k" && piece.color === color) {

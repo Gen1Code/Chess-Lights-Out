@@ -43,7 +43,7 @@ export function ChessTimer({ turn, children }) {
                     if (newTime === 0) {
                         clearInterval(intervalRef.current);
                         intervalRef.current = null;
-                        console.log("Sending checkTime POST");
+
                         api("/game/checkTime", "POST", {
                             gameId: gameId,
                         });
@@ -60,6 +60,11 @@ export function ChessTimer({ turn, children }) {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, [activityTimestamp, status]);
+
+    //Remove Timer for Single Player
+    if (currentGameSettings.mode === "Single") {
+        return <>{children}</>;
+    }
 
     return (
         <div className="chess-game-container">

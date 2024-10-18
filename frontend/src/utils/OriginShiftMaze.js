@@ -20,7 +20,6 @@ export function getRandomMaze() {
 }
 
 export function scramble(maze, n) {
-    // console.log("scramble", maze, n)
     let newMaze = { ...maze };
     for (let i = 0; i < n; i++) {
         let root = newMaze.root;
@@ -490,7 +489,6 @@ export function possibleMoves(game, maze, noMovesIfGameOver = true) {
     }
 
     let moves = piecesMovements(game, maze);
-    // console.log("All Possible Moves in Maze (non-filtered)", moves);
 
     let filteredMoves = [];
     // FIlter for actual moves that dont cause a check if done
@@ -520,7 +518,6 @@ export function possibleMoves(game, maze, noMovesIfGameOver = true) {
         }
         gameCopy.put({ type: moves[i].piece, color: turn }, moves[i].from);
     }
-    // console.log("All Possible Moves in Maze (filtered)", filteredMoves);
 
     return filteredMoves;
 }
@@ -711,7 +708,6 @@ export function styleForMaze(styles, borders, orientation) {
             styles[square].borderRight = "3px solid firebrick";
         }
     });
-    // console.log("styles:", styles);
 
     return styles;
 }

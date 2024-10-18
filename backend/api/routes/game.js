@@ -96,7 +96,6 @@ router.post("/play", async (req, res) => {
 
     // If a game is found
     if (openGames.rows.length > 0) {
-        // console.log("Open Games have been Found");
 
         const game = openGames.rows[0];
         const gameId = game.game_id;
@@ -242,7 +241,6 @@ router.post("/resign", async (req, res) => {
     // Update the game status to finished
     await sql`UPDATE games SET status = 'finished' WHERE game_id = ${gameId}`;
 
-    // console.log("Publishing to GID channel", otherColor, "Opponent resigned");
     // Publish to the game channel that the game is finished
     await publish(gameId, otherColor, "Opponent resigned");
 
@@ -408,13 +406,11 @@ router.post("/move", async (req, res) => {
 
     // Publish the new maze if it was shifted
     if (mazeSetting === "Shift") {
-        // console.log("Publishing maze to GID channel", newMaze);
         await publish(gameId, "maze", newMaze);
     }
 
     // // If the game is over, publish the game over message
     if (gameIsOver) {
-        // console.log("Publishing game Over to GID channel", gameOverMsg);
         await publish(gameId, "black", gameOverMsg);
         await publish(gameId, "white", gameOverMsg);
     }

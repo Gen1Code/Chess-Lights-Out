@@ -18,7 +18,6 @@ export function GameOverCard() {
     }
 
     useEffect(() => {
-        // console.log("status", status);
         setIsVisible(currentGameSettings.status !== "Playing" && currentGameSettings.status !== "Starting");
     }, [currentGameSettings.status]);
 

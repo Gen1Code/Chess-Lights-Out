@@ -20,7 +20,6 @@ export function styleForLightsOut(styles, litupSquares) {
 }
 
 export function getLitupSquares(game, maze, orientation) {
-    // console.log("getLitupSquares triggered");
     //Make it your turn (done for moves function to work properly)
     if (game.turn() !== orientation[0]) {
         let splitFen = game.fen().split(" ");

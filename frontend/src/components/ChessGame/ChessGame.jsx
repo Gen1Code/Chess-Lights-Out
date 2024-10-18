@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, useRef, act } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import { GameContext } from "@context/GameContext";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
@@ -116,7 +116,6 @@ export function ChessGame() {
         let newMoves = moves;
         let moveString = move.from + move.to;
         moveString += move.promotion ? move.promotion : "";
-        // console.log("Move made:", moveString);
         newMoves.push(moveString);
         setMoves(newMoves);
         setGame(gameCopy);
@@ -147,7 +146,6 @@ export function ChessGame() {
                         const newTimes = [...prevTimes];
                         const playerIndex = orientation[0] === "w" ? 0 : 1;
                         newTimes[playerIndex] = res.timeRemaining;
-                        //console.log("Setting time Remaining", newTimes);
                         return newTimes;
                     });
                     setActivityTimestamp(res.activityTimestamp);
@@ -190,7 +188,6 @@ export function ChessGame() {
     }
 
     function botMove(g = game, m = maze) {
-        // console.log("botMove triggered with:", orientation, turn, mazeIsOn);
         let mazeCopy = m;
         let gameCopy = new Chess();
 
@@ -217,8 +214,6 @@ export function ChessGame() {
     }
 
     function styleSquares(game, maze, orientation) {
-        // console.log("styleSquares triggered");
-
         let styles = {};
         let allSquares = new Set(SQUARES);
 
@@ -239,7 +234,6 @@ export function ChessGame() {
             styles = styleForMaze(styles, getMazeBorders(maze), orientation);
         }
 
-        // console.log("styles", styles);
         setSquareStyles(styles);
     }
 
@@ -343,11 +337,6 @@ export function ChessGame() {
 
     useEffect(() => {
         if (ably && !singlePlayer) {
-            // console.log(
-            //     "Subscribing to game channel with",
-            //     gameId,
-            //     orientation
-            // );
             const gameChannel = ably.channels.get(gameId);
             gameChannel.setOptions({ params: { rewind: "0" } });
             gameChannel.subscribe(orientation, (msg) => {
@@ -440,7 +429,6 @@ export function ChessGame() {
                     let newMoves = movesRef.current;
                     let moveString = move.from + move.to;
                     moveString += move.promotion ? move.promotion : "";
-                    // console.log("Move made:", moveString);
                     newMoves.push(moveString);
 
                     let tR = timesRemainingRef.current;
@@ -449,12 +437,10 @@ export function ChessGame() {
 
                     setMoves(newMoves);
                     setGame(gameCopy);
-                    //console.log("Setting time Remaining", tR);
                     setTimesRemaining(tR);
                     setActivityTimestamp(activityTimestamp);
                 }
 
-                // console.log("Message received:", data);
             });
             const mazeChannel = ably.channels.get(gameId);
             // User might miss the first maze message so rewind and grab it
@@ -462,15 +448,9 @@ export function ChessGame() {
             mazeChannel.subscribe("maze", (msg) => {
                 let data = msg.data;
                 setMaze(data);
-                // console.log("Message received:", data);
             });
 
             return () => {
-                // console.log(
-                //     "Unsubscribing from previous channel",
-                //     gameId,
-                //     orientation
-                // );
                 ably.channels.get(gameId).unsubscribe(orientation);
                 ably.channels.get(gameId).unsubscribe("maze");
             };

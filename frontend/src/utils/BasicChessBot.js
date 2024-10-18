@@ -199,7 +199,6 @@ function minimax(
     var children;
     if (maze !== null) {
         children = possibleMoves(game, maze);
-        // console.log("children", children);
     } else {
         children = game.moves({ verbose: true });
     }
@@ -226,7 +225,6 @@ function minimax(
         // Note: in our case, the 'children' are simply modified game states
         var currPrettyMove;
         if (maze != null) {
-            // console.log("currMove", currMove);
             let fen = game.fen().split(" ");
             fen[1] = fen[1] === "w" ? "b" : "w";
             game.load(fen.join(" "));
@@ -259,7 +257,6 @@ function minimax(
         if (maze != null) {
             game.remove(currMove.to);
             if (captured) {
-                // console.log("captured Piece", captured);
                 game.put(captured, currMove.to);
             }
             if (currMove.flags.includes("p")) {

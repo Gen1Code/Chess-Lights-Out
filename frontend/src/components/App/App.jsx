@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { ChessGame } from "@components/ChessGame";
 import { ChessSettings } from "@components/ChessSettings";
 import { ApiRequest } from "@components/ApiRequest";

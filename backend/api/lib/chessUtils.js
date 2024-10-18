@@ -538,7 +538,6 @@ export function possibleMoves(game, maze) {
     }
 
     let moves = piecesMovements(game, maze);
-    // console.log("All Possible Moves in Maze (non-filtered)", moves);
 
     let filteredMoves = [];
     // FIlter for actual moves that dont cause a check if done
@@ -555,7 +554,6 @@ export function possibleMoves(game, maze) {
             gameCopy.put({ type: moves[i].piece, color: turn }, moves[i].to);
         }
         //check if in check
-        // console.log("Checking for check in maze", moves[i]);
         if (inCheckInMaze(gameCopy, maze)) {
             // console.log("Filtered out move", moves[i]);
         } else {
@@ -569,7 +567,6 @@ export function possibleMoves(game, maze) {
         }
         gameCopy.put({ type: moves[i].piece, color: turn }, moves[i].from);
     }
-    // console.log("All Possible Moves in Maze (filtered)", filteredMoves);
 
     return filteredMoves;
 }
@@ -667,7 +664,6 @@ export function getRandomMaze() {
 }
 
 export function scramble(maze, n) {
-    // console.log("scramble", maze, n)
     let newMaze = { ...maze };
     for (let i = 0; i < n; i++) {
         let root = newMaze.root;

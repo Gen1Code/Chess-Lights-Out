@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useState } from "react";
-import { api, apiSetsReponse } from "../utils/api";
+import { api, apiSetsReponse } from "@utils/api";
 import { Chess } from "chess.js";
 import { getRandomMaze } from "@utils/OriginShiftMaze";
 
@@ -63,7 +63,6 @@ export const GameProvider = ({ children }) => {
 
     useEffect(() => {
         if (response !== null) {
-            // console.log(response);
             let message = response.message;
             if (message === "Game Found") {
                 setCurrentGameSettings({
