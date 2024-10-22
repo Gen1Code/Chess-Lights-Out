@@ -49,12 +49,6 @@ export function App() {
         <br />
         <PlayButton />
       </div>
-      <ApiRequest
-        method="POST"
-        path="/auth/"
-        postData={{ name: "examplePlayer" }}
-      />
-      <ApiRequest method="GET" path="/game/play" postData={null} />
     </>
   );
 }
